@@ -21,22 +21,25 @@ function escapeHtml(text = "") {
 function limpiarContenido(text = "") {
   return String(text)
     .replace(/━━━━━━━━━━━━━━━━━━━━/g, "\n")
+    .replace(/Aquí tienes el diagnóstico estratégico de Problema Cero:/gi, "")
     .replace(/Aquí está el diagnóstico estratégico de Problema Cero:/gi, "")
     .replace(/\*\*/g, "")
     .trim();
 }
 
-function convertirContenidoAHTML(text = "") {
-  const limpio = limpiarContenido(text);
-  const lineas = limpio.split("\n").map(l => l.trim()).filter(Boolean);
+function normalizarLinea(linea = "") {
+  return linea
+    .replace(/[⚡🔴🧠⚠️🚀💰🔥🔎🧭🎯🛑🔧📅📆📌💬📊👉]/g, "")
+    .trim();
+}
+
+function esTitulo(linea = "") {
+  const t = normalizarLinea(linea).toUpperCase();
 
   const titulos = [
     "CONSULTA ORIGINAL:",
     "DIAGNÓSTICO:",
     "RESUMEN RÁPIDO",
-    "Tu problema principal:",
-    "Qué está pasando:",
-    "Qué deberías corregir primero:",
     "PROBLEMA PRINCIPAL",
     "QUÉ SIGNIFICA",
     "QUE SIGNIFICA",
@@ -67,63 +70,56 @@ function convertirContenidoAHTML(text = "") {
     "CIERRE ESTRATEGICO"
   ];
 
-  let html = "";
-  let abierto = false;
+  return titulos.some(x => t === x || t.includes(x));
+}
 
-  function cerrarBloque() {
-    if (abierto) {
-      html += `</div>`;
-      abierto = false;
-    }
+function convertirContenidoAHTML(text = "") {
+  const limpio = limpiarContenido(text);
+  const lineas = limpio.split("\n").map(l => l.trim()).filter(Boolean);
+
+  let html = "";
+  let bloqueAbierto = false;
+
+  function abrirBloque(titulo) {
+    if (bloqueAbierto) html += `</div>`;
+    html += `
+      <section class="section">
+        <h2>${escapeHtml(normalizarLinea(titulo))}</h2>
+    `;
+    bloqueAbierto = true;
   }
 
-  lineas.forEach((linea, index) => {
-    let l = linea
-      .replace(/[⚡🔴🧠⚠️🚀💰🔥🔎🧭🎯🛑🔧📅📆📌💬📊👉]/g, "")
-      .trim();
-
+  lineas.forEach((linea) => {
+    const l = normalizarLinea(linea);
     if (!l) return;
 
-    const upper = l.toUpperCase();
-
-    const esTitulo = titulos.some(t => upper.includes(t.toUpperCase()));
-
-    if (esTitulo) {
-      cerrarBloque();
-
-      if (index > 0) {
-        html += `<div class="section-gap"></div>`;
-      }
-
-      html += `
-        <div class="section">
-          <div class="section-kicker">Lectura estratégica</div>
-          <h2>${escapeHtml(l)}</h2>
-      `;
-
-      abierto = true;
+    if (esTitulo(l)) {
+      abrirBloque(l);
       return;
     }
 
-    if (!abierto) {
-      html += `
-        <div class="section">
-          <div class="section-kicker">Lectura estratégica</div>
-          <h2>Observación inicial</h2>
-      `;
-      abierto = true;
+    if (!bloqueAbierto) {
+      abrirBloque("Lectura estratégica");
     }
 
     if (/^\d+\./.test(l)) {
       html += `<p class="numbered">${escapeHtml(l)}</p>`;
     } else if (l.startsWith("-")) {
       html += `<p class="bullet">${escapeHtml(l.replace(/^-/, "•"))}</p>`;
+    } else if (
+      l.toLowerCase().startsWith("tu problema principal:") ||
+      l.toLowerCase().startsWith("qué está pasando:") ||
+      l.toLowerCase().startsWith("que está pasando:") ||
+      l.toLowerCase().startsWith("qué deberías corregir primero:") ||
+      l.toLowerCase().startsWith("que deberías corregir primero:")
+    ) {
+      html += `<p class="highlight">${escapeHtml(l)}</p>`;
     } else {
       html += `<p>${escapeHtml(l)}</p>`;
     }
   });
 
-  cerrarBloque();
+  if (bloqueAbierto) html += `</div>`;
 
   return html;
 }
@@ -167,24 +163,22 @@ app.post("/generar-pdf", async (req, res) => {
 
   body {
     margin: 0;
-    font-family: Inter, Arial, Helvetica, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     background: #f3f4f6;
     color: #111827;
   }
 
   .page {
     width: 210mm;
-    min-height: 297mm;
     background: #ffffff;
     margin: 0 auto;
-    padding: 0;
   }
 
   .cover {
     min-height: 297mm;
     padding: 52px 56px;
     background:
-      radial-gradient(circle at top right, rgba(211,47,47,0.16), transparent 34%),
+      radial-gradient(circle at top right, rgba(211,47,47,0.14), transparent 34%),
       linear-gradient(135deg, #0b1120 0%, #111827 100%);
     color: white;
     position: relative;
@@ -273,14 +267,14 @@ app.post("/generar-pdf", async (req, res) => {
     position: absolute;
     left: 56px;
     right: 56px;
-    bottom: 80px;
+    bottom: 78px;
     border-radius: 24px;
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.16);
     padding: 24px 28px;
-    display: flex;
-    justify-content: space-between;
-    gap: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.25fr;
+    gap: 28px;
   }
 
   .cover-card small {
@@ -299,7 +293,7 @@ app.post("/generar-pdf", async (req, res) => {
   }
 
   .content-page {
-    padding: 42px 52px 52px;
+    padding: 42px 52px 54px;
     background: #ffffff;
   }
 
@@ -309,6 +303,7 @@ app.post("/generar-pdf", async (req, res) => {
     border-radius: 18px;
     padding: 22px 26px;
     margin-bottom: 30px;
+    break-inside: avoid;
   }
 
   .intro-title {
@@ -323,46 +318,45 @@ app.post("/generar-pdf", async (req, res) => {
   .intro p {
     margin: 0;
     color: #374151;
-    font-size: 14px;
-    line-height: 1.65;
+    font-size: 14.8px;
+    line-height: 1.7;
   }
 
   .section {
+    break-inside: avoid;
     page-break-inside: avoid;
-    margin-bottom: 26px;
-    padding: 25px 28px;
+    margin-bottom: 24px;
+    padding: 24px 28px;
     border: 1px solid #e5e7eb;
     border-radius: 22px;
     background: #ffffff;
-    box-shadow: 0 12px 32px rgba(15,23,42,0.045);
-  }
-
-  .section-gap {
-    height: 2px;
-  }
-
-  .section-kicker {
-    color: #d32f2f;
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    margin-bottom: 7px;
+    box-shadow: 0 10px 28px rgba(15,23,42,0.04);
   }
 
   h2 {
-    font-size: 23px;
+    font-size: 22px;
     line-height: 1.18;
     letter-spacing: -0.035em;
     margin: 0 0 16px 0;
     color: #0b1120;
+    border-bottom: 2px solid #fee2e2;
+    padding-bottom: 10px;
   }
 
   p {
-    font-size: 13.8px;
-    line-height: 1.72;
+    font-size: 14.7px;
+    line-height: 1.78;
     color: #1f2937;
     margin: 0 0 12px 0;
+  }
+
+  .highlight {
+    background: #fff7f7;
+    border-left: 4px solid #d32f2f;
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #111827;
+    font-weight: 600;
   }
 
   .numbered {
@@ -375,25 +369,26 @@ app.post("/generar-pdf", async (req, res) => {
   }
 
   .closing {
-    margin-top: 38px;
+    margin-top: 34px;
     border-radius: 26px;
     background: #0b1120;
     color: white;
     padding: 36px 38px;
+    break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .closing h3 {
     margin: 0 0 16px 0;
-    font-size: 32px;
+    font-size: 31px;
     line-height: 1.08;
     letter-spacing: -0.05em;
   }
 
   .closing p {
     color: #d1d5db;
-    font-size: 14px;
-    line-height: 1.65;
+    font-size: 14.5px;
+    line-height: 1.7;
   }
 
   .footer {
@@ -436,8 +431,8 @@ app.post("/generar-pdf", async (req, res) => {
         <strong>Claridad, prioridad y acción</strong>
       </div>
       <div>
-        <small>Tipo</small>
-        <strong>Interconsulta estratégica</strong>
+        <small>Dirección estratégica</small>
+        <strong>Hernán Mariano Waisman</strong>
       </div>
     </div>
   </div>
@@ -460,7 +455,7 @@ app.post("/generar-pdf", async (req, res) => {
     </div>
 
     <div class="footer">
-      <span>Problema Cero · Interconsulta estratégica empresarial</span>
+      <span>Problema Cero · Dirección estratégica: Hernán Mariano Waisman</span>
       <span>problemacero.com.ar</span>
     </div>
   </div>
