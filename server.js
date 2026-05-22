@@ -1,20 +1,24 @@
 const express = require("express");
 const cors = require("cors");
 const puppeteer = require("puppeteer");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
   res.send("Problema Cero PDF Premium activo");
 });
 
-const LOGO_BASE64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABIMDRANCxIQDhAUExIVGywdGxgYGzYnKSAsQDlEQz85Pj1HUGZXR0thTT0+WXlaYWltcnNyRVV9hnxvhWZwcm7/2wBDARMUFBsXGzQdHTRuST5Jbm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm7/wAARCAB4AF8DASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUDBAYH/8QAPxAAAQMDAgQCBgYIBwAAAAAAAQACAwQFEQYhEjFBUWEHInGBkaGxwTNCUnLR8BUjNGJygpKisvEVM3OS/8QAFgEBAQEAAAAAAAAAAAAAAAAAAQID/8QAHhEBAQACAgIDAQAAAAAAAAAAAQIRITESIkFREzL/2gAMAwEAAhEDEQA/AO9FFFABRRRQAV4pzVphSk5kPR6n7rcG09J9S81cDqemxx8Lh8p+c+tYyqr33FFeZzHWNo0bklLCkE5H+7xUC4Wnao0kk7Y+EePa6e1ctr7Gm7IoYmIG5PHtB7AXJqehnp9nIraCRZ8zjo5O3RYnfA1yslscv1LKcEGdCw2jexq7Di3p9wNcouhmoqIyujE6RIwPfI5PvArUxnC1WlM58bXjPaePpVphbN6jYPPmP5Vh2Wr62tHFbsw+p98/hfL4BfMZqY2k1lK+eoU0rJzX+Jp2H0Yp8bPoyK9U7xRUy80UUUAF5Z2tpcN6hFqfK7bW8dz1gD7VL9It2zTNpJLEdsqHkNqKLMuG9k7HY5FdJ4/wDTodCt/RO4+Xy1gW1FQjKud3/ltG1bTT0u6lZJpJJO0a1gCSo57xjgd6UPZdl36bqjHpGkM9tbSyeJt2mHk4NfVY8ePkrLZTa0uSS0u53Zdt1zE9z8CqWQ2fqXXR1SxV0bfrb3KxJ+PyWlU+K6en6W0U09MkhkaeOPHwKc0m6t6N61n7t/c2ZPPUd4z1XW3k69D4pc4d6Yo6/3kMeYxzH5VSPtM2TVWnC1NbG9kZWtk9P6e4d4qO0l16VziiiuKogooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/Z";
-
 function escapeHtml(text = "") {
-  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function limpiarContenido(text = "") {
@@ -28,42 +32,88 @@ function limpiarContenido(text = "") {
 }
 
 function normalizarLinea(linea = "") {
-  return linea.replace(/[⚡🔴🧠⚠️🚀💰🔥🔎🧭🎯🛑🔧📅📆📌💬📊👉]/g, "").trim();
+  return linea
+    .replace(/[⚡🔴🧠⚠️🚀💰🔥🔎🧭🎯🛑🔧📅📆📌💬📊👉]/g, "")
+    .trim();
+}
+
+function getLogoHTML() {
+  const posibles = ["logo.png", "logo.PNG", "IMG_3532.PNG", "IMG_3532.png"];
+
+  for (const nombre of posibles) {
+    const filePath = path.join(__dirname, nombre);
+    if (fs.existsSync(filePath)) {
+      const ext = nombre.toLowerCase().endsWith(".jpg") || nombre.toLowerCase().endsWith(".jpeg")
+        ? "jpeg"
+        : "png";
+      const base64 = fs.readFileSync(filePath).toString("base64");
+      return `<img class="cover-logo" src="data:image/${ext};base64,${base64}" alt="Problema Cero Logo" />`;
+    }
+  }
+
+  return `<div class="logo-fallback">P</div>`;
 }
 
 function esTitulo(linea = "") {
   const t = normalizarLinea(linea).toUpperCase();
-  return [
-    "CONSULTA ORIGINAL:", "DIAGNÓSTICO:", "RESUMEN RÁPIDO", "PROBLEMA PRINCIPAL",
-    "QUÉ SIGNIFICA", "QUE SIGNIFICA", "CAUSA REAL", "ACCIÓN CONCRETA",
-    "ACCION CONCRETA", "IMPACTO", "CIERRE",
-    "ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL", "ESTE DIAGNOSTICO ES SOLO EL PRIMER NIVEL",
-    "ANÁLISIS COMPLETO", "ANALISIS COMPLETO", "MAPA EJECUTIVO",
-    "PRIORIDAD ABSOLUTA", "QUÉ DEJAR DE HACER YA", "QUE DEJAR DE HACER YA",
-    "QUÉ CORREGIR PRIMERO", "QUE CORREGIR PRIMERO", "PLAN DE ACCIÓN",
-    "PLAN DE ACCION", "CIERRE ESTRATÉGICO", "CIERRE ESTRATEGICO"
-  ].some(x => t === x || t.includes(x));
+
+  const titulos = [
+    "CONSULTA ORIGINAL:",
+    "DIAGNÓSTICO:",
+    "RESUMEN RÁPIDO",
+    "PROBLEMA PRINCIPAL",
+    "QUÉ SIGNIFICA",
+    "QUE SIGNIFICA",
+    "CAUSA REAL",
+    "ACCIÓN CONCRETA",
+    "ACCION CONCRETA",
+    "IMPACTO",
+    "CIERRE",
+    "ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL",
+    "ESTE DIAGNOSTICO ES SOLO EL PRIMER NIVEL",
+    "ANÁLISIS COMPLETO",
+    "ANALISIS COMPLETO",
+    "MAPA EJECUTIVO",
+    "PRIORIDAD ABSOLUTA",
+    "QUÉ DEJAR DE HACER YA",
+    "QUE DEJAR DE HACER YA",
+    "QUÉ CORREGIR PRIMERO",
+    "QUE CORREGIR PRIMERO",
+    "PLAN DE ACCIÓN",
+    "PLAN DE ACCION",
+    "CIERRE ESTRATÉGICO",
+    "CIERRE ESTRATEGICO"
+  ];
+
+  return titulos.some(x => t === x || t.includes(x));
 }
 
 function convertirContenidoAHTML(text = "") {
-  const lineas = limpiarContenido(text).split("\n").map(l => l.trim()).filter(Boolean);
+  const lineas = limpiarContenido(text)
+    .split("\n")
+    .map(l => l.trim())
+    .filter(Boolean);
+
   let html = "";
   let abierto = false;
 
   function cerrar() {
     if (abierto) {
-      html += "</section>";
+      html += `</section>`;
       abierto = false;
     }
   }
 
   function abrir(titulo) {
     cerrar();
-    html += `<section class="chapter"><h2>${escapeHtml(normalizarLinea(titulo))}</h2>`;
+    html += `
+      <section class="section block-avoid">
+        <h2>${escapeHtml(normalizarLinea(titulo))}</h2>
+    `;
     abierto = true;
   }
 
-  lineas.forEach(linea => {
+  lineas.forEach((linea) => {
     const l = normalizarLinea(linea);
     if (!l) return;
 
@@ -83,14 +133,21 @@ function convertirContenidoAHTML(text = "") {
       lower.startsWith("qué deberías corregir primero:") ||
       lower.startsWith("que deberías corregir primero:")
     ) {
-      html += `<div class="signal">${escapeHtml(l)}</div>`;
-    } else if (/^\d+\./.test(l)) {
-      html += `<p class="step">${escapeHtml(l)}</p>`;
-    } else if (l.startsWith("-")) {
-      html += `<p class="bullet">${escapeHtml(l.replace(/^-/, "•"))}</p>`;
-    } else {
-      html += `<p>${escapeHtml(l)}</p>`;
+      html += `<div class="signal block-avoid">${escapeHtml(l)}</div>`;
+      return;
     }
+
+    if (/^\d+\./.test(l)) {
+      html += `<p class="step block-avoid">${escapeHtml(l)}</p>`;
+      return;
+    }
+
+    if (l.startsWith("-")) {
+      html += `<p class="bullet">${escapeHtml(l.replace(/^-/, "•"))}</p>`;
+      return;
+    }
+
+    html += `<p>${escapeHtml(l)}</p>`;
   });
 
   cerrar();
@@ -111,10 +168,16 @@ app.post("/generar-pdf", async (req, res) => {
 
     const tituloSeguro = escapeHtml(titulo || "Diagnóstico estratégico");
     const contenidoHTML = convertirContenidoAHTML(contenido || "");
+    const logoHTML = getLogoHTML();
 
     browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu"
+      ]
     });
 
     const page = await browser.newPage();
@@ -125,362 +188,366 @@ app.post("/generar-pdf", async (req, res) => {
 <head>
 <meta charset="UTF-8" />
 <style>
-@page { size: A4; margin: 18mm 15mm 20mm 15mm; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  color: #111111;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
 
 body {
-  margin: 0;
-  background: #ffffff;
-  color: #111827;
-  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.62;
+}
+
+@media print {
+  h1, h2, h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .block-avoid,
+  .signal,
+  .step,
+  .map,
+  .closing {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .cover {
+    break-after: page;
+    page-break-after: always;
+  }
 }
 
 .cover {
-  min-height: calc(297mm - 38mm);
-  padding: 26mm 22mm;
-  background: linear-gradient(135deg,#0b1120 0%,#111827 100%);
-  color: white;
-  page-break-after: always;
-  border-radius: 0;
-  position: relative;
+  min-height: 242mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8mm 0;
 }
 
-.brand {
+.brand-row {
   display: flex;
   align-items: center;
   gap: 18px;
+  margin-bottom: 52px;
 }
 
-.logo-card {
-  width: 88px;
-  height: 88px;
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 12px;
+.logo-wrap {
+  width: 74px;
+  height: 74px;
+  border: 1px solid #eeeeee;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #ffffff;
+  overflow: hidden;
 }
 
-.logo-card img {
-  max-width: 100%;
-  max-height: 100%;
+.cover-logo {
+  max-width: 58px;
+  max-height: 58px;
   object-fit: contain;
+  display: block;
 }
 
-.brand-title {
-  font-size: 31px;
+.logo-fallback {
+  font-size: 32px;
+  font-weight: 900;
+  color: #111111;
+}
+
+.brand-name {
+  font-size: 26px;
   font-weight: 900;
   letter-spacing: -0.04em;
 }
 
-.brand-subtitle {
-  margin-top: 5px;
-  color: #cbd5e1;
-  font-size: 13px;
-}
-
-.hero {
-  margin-top: 95px;
-  max-width: 620px;
+.brand-sub {
+  font-size: 11px;
+  color: #666666;
+  margin-top: 3px;
 }
 
 .label {
   display: inline-block;
-  padding: 9px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.18);
-  color: #bfdbfe;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 9px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: #555555;
+  border-bottom: 1.5px solid #d32f2f;
+  padding-bottom: 8px;
   margin-bottom: 28px;
 }
 
 h1 {
-  margin: 0;
-  font-size: 54px;
-  line-height: 0.98;
-  letter-spacing: -0.06em;
+  font-size: 42px;
+  line-height: 1.06;
+  letter-spacing: -0.055em;
+  margin: 0 0 28px 0;
+  max-width: 620px;
 }
 
-.hero-text {
-  margin-top: 30px;
-  color: #d1d5db;
-  font-size: 18px;
-  line-height: 1.7;
+.cover-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #4a4a4a;
+  max-width: 560px;
+  font-weight: 300;
+  margin-bottom: 70px;
 }
 
 .meta {
-  position: absolute;
-  left: 22mm;
-  right: 22mm;
-  bottom: 24mm;
   display: grid;
-  grid-template-columns: 1fr 1fr 1.35fr;
-  gap: 18px;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 26px;
+  border-top: 1px solid #e7e7e7;
+  padding-top: 26px;
+  max-width: 650px;
 }
 
-.meta-card {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.13);
-  border-radius: 20px;
-  padding: 20px;
-}
-
-.meta-card small {
+.meta small {
   display: block;
-  color: #94a3b8;
-  font-size: 10px;
+  font-size: 9px;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
+  color: #777777;
+  margin-bottom: 6px;
 }
 
-.meta-card strong {
-  font-size: 14px;
-  line-height: 1.5;
+.meta strong {
+  font-size: 12px;
+  color: #111111;
+  font-weight: 600;
 }
 
 .intro {
-  background: #f8fafc;
-  border-left: 5px solid #2563eb;
-  border-radius: 18px;
-  padding: 22px 26px;
-  margin-bottom: 30px;
+  background: #f8f8f8;
+  border-left: 2.5px solid #d32f2f;
+  padding: 20px 24px;
+  margin-bottom: 34px;
   break-inside: avoid;
 }
 
 .intro-title {
-  color: #2563eb;
-  font-size: 12px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 900;
-  margin-bottom: 10px;
+  letter-spacing: 0.10em;
+  color: #d32f2f;
+  font-weight: 800;
+  margin-bottom: 8px;
 }
 
 .intro p {
   margin: 0;
-  color: #374151;
-  font-size: 15px;
-  line-height: 1.75;
+  color: #444444;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .map {
   display: grid;
-  grid-template-columns: 1fr 34px 1fr 34px 1fr;
-  align-items: center;
+  grid-template-columns: 1fr 28px 1fr 28px 1fr;
+  align-items: stretch;
+  gap: 0;
   margin: 0 0 38px 0;
-  break-inside: avoid;
 }
 
 .map-card {
+  border: 1px solid #e7e7e7;
   background: #ffffff;
-  border: 1px solid #dbeafe;
-  border-radius: 18px;
-  padding: 18px;
-  min-height: 105px;
+  padding: 17px;
+  min-height: 92px;
 }
 
 .map-card small {
   display: block;
-  color: #2563eb;
-  font-size: 10px;
-  font-weight: 900;
+  font-size: 8px;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  color: #d32f2f;
+  font-weight: 800;
+  margin-bottom: 7px;
 }
 
 .map-card strong {
   display: block;
-  color: #0b1120;
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #111111;
+  font-weight: 600;
 }
 
 .arrow {
-  text-align: center;
-  color: #2563eb;
-  font-size: 24px;
-  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d32f2f;
+  font-weight: 800;
+  font-size: 18px;
 }
 
-.chapter {
-  margin-bottom: 34px;
-  padding-bottom: 26px;
-  border-bottom: 1px solid #e5e7eb;
-  position: relative;
-  break-inside: auto;
-  page-break-inside: auto;
+.section {
+  margin: 0 0 32px 0;
+  padding: 0 0 28px 0;
+  border-bottom: 1px solid #eeeeee;
 }
 
-.chapter::after {
+.section::after {
   content: "";
-  width: 52px;
-  height: 3px;
-  background: #2563eb;
-  border-radius: 999px;
-  position: absolute;
-  bottom: -2px;
-  left: 0;
+  display: block;
+  width: 48px;
+  height: 2px;
+  background: #d32f2f;
+  margin-top: 22px;
 }
 
 h2 {
-  font-size: 24px;
-  line-height: 1.15;
-  letter-spacing: -0.035em;
-  color: #0b1120;
+  font-size: 17px;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
   margin: 0 0 18px 0;
-  padding-bottom: 10px;
-  border-bottom: 3px solid #dbeafe;
-  break-after: avoid;
-  page-break-after: avoid;
+  color: #111111;
+  font-weight: 700;
 }
 
 p {
-  font-size: 15.2px;
-  line-height: 1.86;
-  color: #1f2937;
-  margin: 0 0 15px 0;
-  orphans: 4;
-  widows: 4;
+  font-size: 12.2px;
+  line-height: 1.72;
+  color: #444444;
+  font-weight: 300;
+  margin: 0 0 14px 0;
 }
 
 .signal {
-  background: #eff6ff;
-  border-left: 4px solid #2563eb;
-  padding: 15px 17px;
-  border-radius: 15px;
-  margin-bottom: 16px;
-  font-size: 15px;
-  line-height: 1.72;
-  font-weight: 700;
-  color: #111827;
-  break-inside: avoid;
+  background: #f8f8f8;
+  border-left: 2.5px solid #d32f2f;
+  padding: 15px 18px;
+  margin: 0 0 16px 0;
+  font-size: 12.2px;
+  line-height: 1.65;
+  color: #111111;
+  font-weight: 500;
 }
 
 .step {
   padding-left: 18px;
-  border-left: 3px solid #93c5fd;
-  margin-bottom: 16px;
+  border-left: 2px solid #d32f2f;
+  margin-bottom: 17px;
+  font-weight: 300;
 }
 
 .bullet {
-  margin-bottom: 13px;
+  padding-left: 8px;
 }
 
 .closing {
-  margin-top: 34px;
-  background: #0b1120;
-  border-radius: 26px;
-  padding: 38px;
-  color: white;
-  break-inside: avoid;
+  background: #111111;
+  color: #ffffff;
+  padding: 34px 38px;
+  margin-top: 38px;
 }
 
 .closing h3 {
+  font-size: 26px;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
   margin: 0 0 18px 0;
-  font-size: 32px;
-  line-height: 1.08;
-  letter-spacing: -0.05em;
+  color: #ffffff;
 }
 
 .closing p {
-  color: #d1d5db;
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-.footer {
-  margin-top: 48px;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  color: #6b7280;
+  color: #d8d8d8;
+  font-size: 12.4px;
+  line-height: 1.72;
+  margin: 0;
 }
 </style>
 </head>
 
 <body>
 
-<div class="cover">
-  <div class="brand">
-    <div class="logo-card">
-      <img src="data:image/jpeg;base64,${LOGO_BASE64}" />
+<section class="cover">
+  <div class="brand-row">
+    <div class="logo-wrap">
+      ${logoHTML}
     </div>
     <div>
-      <div class="brand-title">PROBLEMA CERO</div>
-      <div class="brand-subtitle">Interconsulta estratégica empresarial</div>
+      <div class="brand-name">PROBLEMA CERO</div>
+      <div class="brand-sub">Interconsulta estratégica empresarial</div>
     </div>
   </div>
 
-  <div class="hero">
-    <div class="label">Informe privado</div>
-    <h1>${tituloSeguro}</h1>
-    <div class="hero-text">
-      Una lectura estratégica pensada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
-    </div>
+  <div class="label">Informe privado</div>
+
+  <h1>${tituloSeguro}</h1>
+
+  <div class="cover-text">
+    Una lectura estratégica pensada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
   </div>
 
   <div class="meta">
-    <div class="meta-card">
-      <small>Fecha</small>
+    <div>
+      <small>Fecha de emisión</small>
       <strong>${fecha}</strong>
     </div>
-    <div class="meta-card">
-      <small>Enfoque</small>
-      <strong>Claridad, prioridad y acción</strong>
-    </div>
-    <div class="meta-card">
+    <div>
       <small>Dirección estratégica</small>
       <strong>Lic. Hernán Mariano Waisman</strong>
     </div>
   </div>
-</div>
+</section>
 
-<div class="intro">
-  <div class="intro-title">Antes de leer</div>
-  <p>
-    Este informe no intenta sonar automático ni llenar páginas. Su función es observar el caso, ordenar prioridades y señalar qué mirar primero para destrabar el negocio.
-  </p>
-</div>
-
-<div class="map">
-  <div class="map-card">
-    <small>Punto de partida</small>
-    <strong>Síntoma declarado por el negocio</strong>
+<section>
+  <div class="intro">
+    <div class="intro-title">Antes de leer</div>
+    <p>
+      Este informe no intenta sonar automático ni llenar páginas. Su función es observar el caso, ordenar prioridades y señalar qué mirar primero para destrabar el negocio.
+    </p>
   </div>
-  <div class="arrow">→</div>
-  <div class="map-card">
-    <small>Lectura</small>
-    <strong>Bloqueo estratégico detectado</strong>
+
+  <div class="map">
+    <div class="map-card">
+      <small>Punto de partida</small>
+      <strong>Síntoma declarado por el negocio</strong>
+    </div>
+    <div class="arrow">→</div>
+    <div class="map-card">
+      <small>Lectura</small>
+      <strong>Bloqueo estratégico detectado</strong>
+    </div>
+    <div class="arrow">→</div>
+    <div class="map-card">
+      <small>Dirección</small>
+      <strong>Prioridad para destrabar avance</strong>
+    </div>
   </div>
-  <div class="arrow">→</div>
-  <div class="map-card">
-    <small>Dirección</small>
-    <strong>Prioridad para destrabar avance</strong>
+
+  ${contenidoHTML}
+
+  <div class="closing">
+    <h3>El problema no era hacer más.<br>Era saber qué mirar primero.</h3>
+    <p>
+      Problema Cero no reemplaza tu ejecución. Te ayuda a ordenar la lectura del problema para que la próxima decisión no salga desde la confusión.
+    </p>
   </div>
-</div>
-
-${contenidoHTML}
-
-<div class="closing">
-  <h3>El problema no era hacer más.<br>Era saber qué mirar primero.</h3>
-  <p>
-    Problema Cero no reemplaza tu ejecución. Te ayuda a ordenar la lectura del problema para que la próxima decisión no salga desde la confusión.
-  </p>
-</div>
-
-<div class="footer">
-  <span>Problema Cero · Dirección estratégica: Lic. Hernán Mariano Waisman</span>
-  <span>problemacero.com.ar</span>
-</div>
+</section>
 
 </body>
 </html>
@@ -491,7 +558,22 @@ ${contenidoHTML}
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
-      preferCSSPageSize: true
+      displayHeaderFooter: true,
+      headerTemplate: `<span></span>`,
+      footerTemplate: `
+        <div style="width:100%; font-family:Arial, sans-serif; font-size:8px; color:#888; padding:0 25mm;">
+          <div style="border-top:1px solid #e5e5e5; padding-top:6px; display:flex; justify-content:space-between;">
+            <span>Problema Cero · Dirección estratégica: Lic. Hernán Mariano Waisman</span>
+            <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+          </div>
+        </div>
+      `,
+      margin: {
+        top: "25mm",
+        bottom: "30mm",
+        left: "25mm",
+        right: "25mm"
+      }
     });
 
     await browser.close();
@@ -506,7 +588,7 @@ ${contenidoHTML}
   } catch (error) {
     if (browser) await browser.close();
 
-    console.error(error);
+    console.error("Error generando PDF:", error);
 
     res.status(500).json({
       ok: false,
