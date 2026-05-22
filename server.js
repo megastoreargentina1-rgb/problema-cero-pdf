@@ -7,8 +7,24 @@ const path = require("path");
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.static(__dirname));
+app.use(express.json({ limit: "50mb" }));
+
+let logoBase64 = "";
+
+try {
+  const logoPath = path.join(__dirname, "logo.png");
+
+  if (fs.existsSync(logoPath)) {
+    const logoData = fs.readFileSync(logoPath);
+    logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+    console.log("✅ Logo cargado correctamente");
+  } else {
+    console.log("⚠️ No se encontró logo.png");
+  }
+
+} catch (error) {
+  console.error("Error leyendo logo:", error);
+}
 
 app.get("/", (req, res) => {
   res.send("Problema Cero PDF Premium activo");
@@ -24,10 +40,10 @@ function escapeHtml(text = "") {
 function limpiarContenido(text = "") {
   return String(text)
     .replace(/━━━━━━━━━━━━━━━━━━━━/g, "\n")
+    .replace(/\*\*/g, "")
     .replace(/Aquí tienes el diagnóstico estratégico de Problema Cero:/gi, "")
     .replace(/Aquí está el diagnóstico estratégico de Problema Cero:/gi, "")
     .replace(/Aquí está el diagnóstico de Problema Cero para tu negocio:/gi, "")
-    .replace(/\*\*/g, "")
     .trim();
 }
 
@@ -37,30 +53,12 @@ function normalizarLinea(linea = "") {
     .trim();
 }
 
-function getLogoHTML() {
-  const posibles = ["logo.png", "logo.PNG", "IMG_3532.PNG", "IMG_3532.png"];
-
-  for (const nombre of posibles) {
-    const filePath = path.join(__dirname, nombre);
-    if (fs.existsSync(filePath)) {
-      const ext = nombre.toLowerCase().endsWith(".jpg") || nombre.toLowerCase().endsWith(".jpeg")
-        ? "jpeg"
-        : "png";
-      const base64 = fs.readFileSync(filePath).toString("base64");
-      return `<img class="cover-logo" src="data:image/${ext};base64,${base64}" alt="Problema Cero Logo" />`;
-    }
-  }
-
-  return `<div class="logo-fallback">P</div>`;
-}
-
 function esTitulo(linea = "") {
   const t = normalizarLinea(linea).toUpperCase();
 
   const titulos = [
-    "CONSULTA ORIGINAL:",
-    "DIAGNÓSTICO:",
     "RESUMEN RÁPIDO",
+    "RESUMEN RAPIDO",
     "PROBLEMA PRINCIPAL",
     "QUÉ SIGNIFICA",
     "QUE SIGNIFICA",
@@ -69,10 +67,6 @@ function esTitulo(linea = "") {
     "ACCION CONCRETA",
     "IMPACTO",
     "CIERRE",
-    "ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL",
-    "ESTE DIAGNOSTICO ES SOLO EL PRIMER NIVEL",
-    "ANÁLISIS COMPLETO",
-    "ANALISIS COMPLETO",
     "MAPA EJECUTIVO",
     "PRIORIDAD ABSOLUTA",
     "QUÉ DEJAR DE HACER YA",
@@ -82,13 +76,20 @@ function esTitulo(linea = "") {
     "PLAN DE ACCIÓN",
     "PLAN DE ACCION",
     "CIERRE ESTRATÉGICO",
-    "CIERRE ESTRATEGICO"
+    "CIERRE ESTRATEGICO",
+    "CONTENIDO QUE DEBERÍA CREAR",
+    "CONTENIDO QUE DEBERIA CREAR",
+    "MENSAJES DE VENTA LISTOS PARA USAR",
+    "MÉTRICA QUE DEBERÍA MIRAR",
+    "METRICA QUE DEBERIA MIRAR",
+    "SI / ENTONCES"
   ];
 
   return titulos.some(x => t === x || t.includes(x));
 }
 
 function convertirContenidoAHTML(text = "") {
+
   const lineas = limpiarContenido(text)
     .split("\n")
     .map(l => l.trim())
@@ -106,15 +107,19 @@ function convertirContenidoAHTML(text = "") {
 
   function abrir(titulo) {
     cerrar();
+
     html += `
       <section class="section block-avoid">
         <h2>${escapeHtml(normalizarLinea(titulo))}</h2>
     `;
+
     abierto = true;
   }
 
   lineas.forEach((linea) => {
+
     const l = normalizarLinea(linea);
+
     if (!l) return;
 
     if (esTitulo(l)) {
@@ -133,31 +138,53 @@ function convertirContenidoAHTML(text = "") {
       lower.startsWith("qué deberías corregir primero:") ||
       lower.startsWith("que deberías corregir primero:")
     ) {
-      html += `<div class="signal block-avoid">${escapeHtml(l)}</div>`;
+
+      html += `
+        <div class="signal block-avoid">
+          ${escapeHtml(l)}
+        </div>
+      `;
+
       return;
     }
 
     if (/^\d+\./.test(l)) {
-      html += `<p class="step block-avoid">${escapeHtml(l)}</p>`;
+
+      html += `
+        <div class="step block-avoid">
+          ${escapeHtml(l)}
+        </div>
+      `;
+
       return;
     }
 
     if (l.startsWith("-")) {
-      html += `<p class="bullet">${escapeHtml(l.replace(/^-/, "•"))}</p>`;
+
+      html += `
+        <p class="bullet">
+          ${escapeHtml(l.replace(/^-/, "•"))}
+        </p>
+      `;
+
       return;
     }
 
     html += `<p>${escapeHtml(l)}</p>`;
+
   });
 
   cerrar();
+
   return html;
 }
 
 app.post("/generar-pdf", async (req, res) => {
+
   let browser;
 
   try {
+
     const { titulo, contenido } = req.body;
 
     const fecha = new Date().toLocaleDateString("es-AR", {
@@ -166,9 +193,7 @@ app.post("/generar-pdf", async (req, res) => {
       day: "numeric"
     });
 
-    const tituloSeguro = escapeHtml(titulo || "Diagnóstico estratégico");
     const contenidoHTML = convertirContenidoAHTML(contenido || "");
-    const logoHTML = getLogoHTML();
 
     browser = await puppeteer.launch({
       headless: "new",
@@ -185,375 +210,430 @@ app.post("/generar-pdf", async (req, res) => {
     const html = `
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8" />
+
+<meta charset="UTF-8">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-* {
-  box-sizing: border-box;
+:root{
+  --bg-dark:#0F172A;
+  --text-main:#111827;
+  --text-secondary:#374151;
+  --red:#D32F2F;
+  --light:#F8FAFC;
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #ffffff;
-  color: #111111;
-  font-family: Inter, Arial, Helvetica, sans-serif;
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
 }
 
-body {
-  font-size: 11pt;
-  line-height: 1.62;
+html,body{
+  font-family:'Inter',sans-serif;
+  background:#ffffff;
+  color:var(--text-main);
 }
 
-@media print {
-  h1, h2, h3 {
-    break-after: avoid;
-    page-break-after: avoid;
+body{
+  font-size:12px;
+  line-height:1.72;
+}
+
+@media print{
+
+  h1,h2,h3{
+    break-after:avoid;
+    page-break-after:avoid;
   }
 
-  p, li {
-    orphans: 3;
-    widows: 3;
+  p,li{
+    orphans:3;
+    widows:3;
   }
 
   .block-avoid,
   .signal,
   .step,
-  .map,
-  .closing {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  .visual-map,
+  .cover-wrapper{
+    break-inside:avoid;
+    page-break-inside:avoid;
   }
 
-  .cover {
-    break-after: page;
-    page-break-after: always;
+  .cover-wrapper{
+    break-after:page;
+    page-break-after:always;
   }
+
 }
 
-.cover {
-  min-height: 242mm;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 8mm 0;
+.cover-wrapper{
+  min-height:245mm;
+  background:linear-gradient(180deg,#0F172A 0%, #111827 100%);
+  color:#ffffff;
+  border-radius:18px;
+  padding:48px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
 }
 
-.brand-row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin-bottom: 52px;
+.cover-top{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
 }
 
-.logo-wrap {
-  width: 74px;
-  height: 74px;
-  border: 1px solid #eeeeee;
-  border-radius: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  overflow: hidden;
+.logo-card{
+  background:#ffffff;
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:28px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.25);
 }
 
-.cover-logo {
-  max-width: 58px;
-  max-height: 58px;
-  object-fit: contain;
-  display: block;
+.logo-card img{
+  width:58px;
+  height:auto;
+  display:block;
 }
 
-.logo-fallback {
-  font-size: 32px;
-  font-weight: 900;
-  color: #111111;
+.brand-name{
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:0.12em;
+  margin-bottom:4px;
 }
 
-.brand-name {
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: -0.04em;
+.brand-sub{
+  font-size:11px;
+  color:#CBD5E1;
+  font-weight:400;
 }
 
-.brand-sub {
-  font-size: 11px;
-  color: #666666;
-  margin-top: 3px;
+.cover-middle{
+  margin-top:20px;
 }
 
-.label {
-  display: inline-block;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #555555;
-  border-bottom: 1.5px solid #d32f2f;
-  padding-bottom: 8px;
-  margin-bottom: 28px;
+.doc-type{
+  display:flex;
+  align-items:center;
+  font-size:9px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:#E2E8F0;
+  margin-bottom:18px;
 }
 
-h1 {
-  font-size: 42px;
-  line-height: 1.06;
-  letter-spacing: -0.055em;
-  margin: 0 0 28px 0;
-  max-width: 620px;
+.doc-type::before{
+  content:"";
+  width:22px;
+  height:2px;
+  background:var(--red);
+  margin-right:12px;
 }
 
-.cover-text {
-  font-size: 15px;
-  line-height: 1.75;
-  color: #4a4a4a;
-  max-width: 560px;
-  font-weight: 300;
-  margin-bottom: 70px;
+.cover-title{
+  font-size:44px;
+  line-height:1.05;
+  letter-spacing:-0.05em;
+  font-weight:900;
+  margin-bottom:28px;
+  max-width:640px;
 }
 
-.meta {
-  display: grid;
-  grid-template-columns: 1fr 1.25fr;
-  gap: 26px;
-  border-top: 1px solid #e7e7e7;
-  padding-top: 26px;
-  max-width: 650px;
+.cover-desc{
+  font-size:14px;
+  line-height:1.8;
+  color:#CBD5E1;
+  max-width:620px;
+  font-weight:300;
 }
 
-.meta small {
-  display: block;
-  font-size: 9px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: #777777;
-  margin-bottom: 6px;
+.cover-bottom{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+  border-top:1px solid rgba(255,255,255,0.14);
+  padding-top:28px;
 }
 
-.meta strong {
-  font-size: 12px;
-  color: #111111;
-  font-weight: 600;
+.meta-label{
+  font-size:8px;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  color:#94A3B8;
+  margin-bottom:6px;
 }
 
-.intro {
-  background: #f8f8f8;
-  border-left: 2.5px solid #d32f2f;
-  padding: 20px 24px;
-  margin-bottom: 34px;
-  break-inside: avoid;
+.meta-value{
+  font-size:12px;
+  color:#ffffff;
+  font-weight:600;
 }
 
-.intro-title {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.10em;
-  color: #d32f2f;
-  font-weight: 800;
-  margin-bottom: 8px;
+.interior{
+  padding-top:6px;
 }
 
-.intro p {
-  margin: 0;
-  color: #444444;
-  font-size: 12px;
-  line-height: 1.7;
+.visual-map{
+  background:var(--light);
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  padding:24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:40px;
 }
 
-.map {
-  display: grid;
-  grid-template-columns: 1fr 28px 1fr 28px 1fr;
-  align-items: stretch;
-  gap: 0;
-  margin: 0 0 38px 0;
+.map-step{
+  display:flex;
+  flex-direction:column;
 }
 
-.map-card {
-  border: 1px solid #e7e7e7;
-  background: #ffffff;
-  padding: 17px;
-  min-height: 92px;
+.step-label{
+  font-size:8px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:#64748B;
+  margin-bottom:5px;
+  font-weight:700;
 }
 
-.map-card small {
-  display: block;
-  font-size: 8px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: #d32f2f;
-  font-weight: 800;
-  margin-bottom: 7px;
+.step-value{
+  font-size:12px;
+  color:var(--text-main);
+  font-weight:700;
 }
 
-.map-card strong {
-  display: block;
-  font-size: 11px;
-  line-height: 1.45;
-  color: #111111;
-  font-weight: 600;
+.map-arrow{
+  color:var(--red);
+  font-size:18px;
+  font-weight:900;
 }
 
-.arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #d32f2f;
-  font-weight: 800;
-  font-size: 18px;
+.section{
+  margin-bottom:36px;
+  padding-bottom:28px;
+  border-bottom:1px solid #EEEEEE;
 }
 
-.section {
-  margin: 0 0 32px 0;
-  padding: 0 0 28px 0;
-  border-bottom: 1px solid #eeeeee;
+.section::after{
+  content:"";
+  display:block;
+  width:52px;
+  height:2px;
+  background:var(--red);
+  margin-top:24px;
 }
 
-.section::after {
-  content: "";
-  display: block;
-  width: 48px;
-  height: 2px;
-  background: #d32f2f;
-  margin-top: 22px;
+h2{
+  font-size:18px;
+  line-height:1.2;
+  margin-bottom:18px;
+  color:var(--text-main);
+  letter-spacing:-0.02em;
+  font-weight:800;
 }
 
-h2 {
-  font-size: 17px;
-  line-height: 1.25;
-  letter-spacing: -0.025em;
-  margin: 0 0 18px 0;
-  color: #111111;
-  font-weight: 700;
+p{
+  margin-bottom:16px;
+  color:var(--text-secondary);
+  font-size:12.5px;
+  line-height:1.78;
+  font-weight:400;
 }
 
-p {
-  font-size: 12.2px;
-  line-height: 1.72;
-  color: #444444;
-  font-weight: 300;
-  margin: 0 0 14px 0;
+.signal{
+  background:#F8FAFC;
+  border-left:3px solid var(--red);
+  padding:18px 20px;
+  margin-bottom:18px;
+  border-radius:0 8px 8px 0;
+  color:var(--text-main);
+  font-weight:600;
+  line-height:1.7;
 }
 
-.signal {
-  background: #f8f8f8;
-  border-left: 2.5px solid #d32f2f;
-  padding: 15px 18px;
-  margin: 0 0 16px 0;
-  font-size: 12.2px;
-  line-height: 1.65;
-  color: #111111;
-  font-weight: 500;
+.step{
+  border-left:2px solid var(--red);
+  padding-left:16px;
+  margin-bottom:18px;
+  color:var(--text-secondary);
 }
 
-.step {
-  padding-left: 18px;
-  border-left: 2px solid #d32f2f;
-  margin-bottom: 17px;
-  font-weight: 300;
+.bullet{
+  padding-left:6px;
 }
 
-.bullet {
-  padding-left: 8px;
+.closing{
+  background:#111827;
+  border-radius:16px;
+  padding:38px;
+  margin-top:44px;
 }
 
-.closing {
-  background: #111111;
-  color: #ffffff;
-  padding: 34px 38px;
-  margin-top: 38px;
+.closing h3{
+  color:#ffffff;
+  font-size:28px;
+  line-height:1.15;
+  letter-spacing:-0.04em;
+  margin-bottom:20px;
+  font-weight:900;
 }
 
-.closing h3 {
-  font-size: 26px;
-  line-height: 1.12;
-  letter-spacing: -0.045em;
-  margin: 0 0 18px 0;
-  color: #ffffff;
+.closing p{
+  color:#D1D5DB;
+  font-size:13px;
+  line-height:1.8;
 }
 
-.closing p {
-  color: #d8d8d8;
-  font-size: 12.4px;
-  line-height: 1.72;
-  margin: 0;
-}
 </style>
+
 </head>
 
 <body>
 
-<section class="cover">
-  <div class="brand-row">
-    <div class="logo-wrap">
-      ${logoHTML}
+<section class="cover-wrapper">
+
+  <div class="cover-top">
+
+    ${
+      logoBase64
+      ? `
+      <div class="logo-card">
+        <img src="${logoBase64}" alt="Problema Cero Logo">
+      </div>
+      `
+      : ""
+    }
+
+    <div class="brand-name">
+      PROBLEMA CERO
     </div>
-    <div>
-      <div class="brand-name">PROBLEMA CERO</div>
-      <div class="brand-sub">Interconsulta estratégica empresarial</div>
+
+    <div class="brand-sub">
+      Interconsulta estratégica empresarial
     </div>
+
   </div>
 
-  <div class="label">Informe privado</div>
+  <div class="cover-middle">
 
-  <h1>${tituloSeguro}</h1>
+    <div class="doc-type">
+      Informe privado
+    </div>
 
-  <div class="cover-text">
-    Una lectura estratégica pensada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
+    <div class="cover-title">
+      ${escapeHtml(titulo || "Diagnóstico estratégico")}
+    </div>
+
+    <div class="cover-desc">
+      Una lectura estratégica pensada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
+    </div>
+
   </div>
 
-  <div class="meta">
+  <div class="cover-bottom">
+
     <div>
-      <small>Fecha de emisión</small>
-      <strong>${fecha}</strong>
+      <div class="meta-label">
+        Fecha de emisión
+      </div>
+
+      <div class="meta-value">
+        ${fecha}
+      </div>
     </div>
+
     <div>
-      <small>Dirección estratégica</small>
-      <strong>Lic. Hernán Mariano Waisman</strong>
+      <div class="meta-label">
+        Dirección estratégica
+      </div>
+
+      <div class="meta-value">
+        Lic. Hernán Mariano Waisman
+      </div>
     </div>
+
   </div>
+
 </section>
 
-<section>
-  <div class="intro">
-    <div class="intro-title">Antes de leer</div>
-    <p>
-      Este informe no intenta sonar automático ni llenar páginas. Su función es observar el caso, ordenar prioridades y señalar qué mirar primero para destrabar el negocio.
-    </p>
-  </div>
+<section class="interior">
 
-  <div class="map">
-    <div class="map-card">
-      <small>Punto de partida</small>
-      <strong>Síntoma declarado por el negocio</strong>
+  <div class="visual-map">
+
+    <div class="map-step">
+      <div class="step-label">
+        Punto de partida
+      </div>
+
+      <div class="step-value">
+        Síntoma declarado
+      </div>
     </div>
-    <div class="arrow">→</div>
-    <div class="map-card">
-      <small>Lectura</small>
-      <strong>Bloqueo estratégico detectado</strong>
+
+    <div class="map-arrow">→</div>
+
+    <div class="map-step">
+      <div class="step-label">
+        Lectura
+      </div>
+
+      <div class="step-value">
+        Bloqueo estratégico
+      </div>
     </div>
-    <div class="arrow">→</div>
-    <div class="map-card">
-      <small>Dirección</small>
-      <strong>Prioridad para destrabar avance</strong>
+
+    <div class="map-arrow">→</div>
+
+    <div class="map-step">
+      <div class="step-label">
+        Dirección
+      </div>
+
+      <div class="step-value">
+        Prioridad y avance
+      </div>
     </div>
+
   </div>
 
   ${contenidoHTML}
 
   <div class="closing">
-    <h3>El problema no era hacer más.<br>Era saber qué mirar primero.</h3>
+
+    <h3>
+      El problema no era hacer más.<br>
+      Era saber qué mirar primero.
+    </h3>
+
     <p>
       Problema Cero no reemplaza tu ejecución. Te ayuda a ordenar la lectura del problema para que la próxima decisión no salga desde la confusión.
     </p>
+
   </div>
+
 </section>
 
 </body>
+
 </html>
 `;
 
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, {
+      waitUntil: "networkidle0"
+    });
 
     const pdf = await page.pdf({
       format: "A4",
@@ -561,9 +641,9 @@ p {
       displayHeaderFooter: true,
       headerTemplate: `<span></span>`,
       footerTemplate: `
-        <div style="width:100%; font-family:Arial, sans-serif; font-size:8px; color:#888; padding:0 25mm;">
-          <div style="border-top:1px solid #e5e5e5; padding-top:6px; display:flex; justify-content:space-between;">
-            <span>Problema Cero · Dirección estratégica: Lic. Hernán Mariano Waisman</span>
+        <div style="width:100%;font-family:Inter,sans-serif;font-size:8px;color:#94A3B8;padding:0 25mm;">
+          <div style="border-top:1px solid #E2E8F0;padding-top:8px;display:flex;justify-content:space-between;">
+            <span style="font-weight:600;">Problema Cero — Dirección Estratégica</span>
             <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
           </div>
         </div>
@@ -586,7 +666,10 @@ p {
     res.send(pdf);
 
   } catch (error) {
-    if (browser) await browser.close();
+
+    if (browser) {
+      await browser.close();
+    }
 
     console.error("Error generando PDF:", error);
 
@@ -594,7 +677,9 @@ p {
       ok: false,
       error: error.message
     });
+
   }
+
 });
 
 const PORT = process.env.PORT || 3000;
