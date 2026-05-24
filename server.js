@@ -30,7 +30,7 @@ try {
 }
 
 app.get("/", (req, res) => {
-  res.send("Problema Cero PDF Premium activo con tipografía gigante");
+  res.send("Problema Cero PDF Premium activo - Sistema Responsivo Inteligente");
 });
 
 function escapeHtml(text = "") {
@@ -74,7 +74,7 @@ function convertirContenidoAHTML(text = "") {
 
   function abrir(titulo) {
     cerrar();
-    html += `<section class="section block-avoid"><h2>${escapeHtml(normalizarLinea(titulo).replace(/:$/g, ""))}</h2>`;
+    html += `<section class="section"><h2>${escapeHtml(normalizarLinea(titulo).replace(/:$/g, ""))}</h2>`;
     abierto = true;
   }
 
@@ -109,7 +109,8 @@ function convertirContenidoAHTML(text = "") {
 app.post("/generar-pdf", async (req, res) => {
   let browser;
   try {
-    const { titulo, contenido } = req.body;
+    // ACA ESTA LA CLAVE: Recibimos la orden "isMobile" desde tu web
+    const { titulo, contenido, isMobile } = req.body;
     const fecha = new Date().toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric" });
     const contenidoHTML = convertirContenidoAHTML(contenido || "");
 
@@ -120,6 +121,7 @@ app.post("/generar-pdf", async (req, res) => {
 
     const page = await browser.newPage();
 
+    // DISEÑO DINAMICO: Si esMobile es verdadero, pone letras grandes. Si es falso, letras estándar.
     const html = `
 <!DOCTYPE html>
 <html lang="es">
@@ -132,7 +134,10 @@ app.post("/generar-pdf", async (req, res) => {
 :root{ --dark:#0B132B; --dark2:#111827; --text:#111827; --muted:#1F2937; --soft:#F8FAFC; --red:#D32F2F; --border:#E5E7EB; }
 *{ box-sizing:border-box; margin:0; padding:0; }
 html,body{ font-family:'Inter',Arial,sans-serif; background:#fff; color:var(--text); }
-body{ font-size:20px; line-height:1.9; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+
+/* LETRAS INTELIGENTES SEGÚN EL DISPOSITIVO */
+body{ font-size:${isMobile ? '24px' : '16px'}; line-height:${isMobile ? '1.8' : '1.85'}; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+
 @media print{
   h1,h2,h3{ break-after:avoid; page-break-after:avoid; }
   p,li{ orphans:3; widows:3; }
@@ -140,32 +145,35 @@ body{ font-size:20px; line-height:1.9; -webkit-font-smoothing:antialiased; text-
   .cover-wrapper{ break-after:page; page-break-after:always; }
   .closing{ break-before:page; page-break-before:always; }
 }
-.cover-wrapper{ height:238mm; background:linear-gradient(160deg,#0B132B 0%,#111827 100%); color:#fff; border-radius:18px; padding:34px 34px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; }
+
+.cover-wrapper{ height:238mm; background:linear-gradient(160deg,#0B132B 0%,#111827 100%); color:#fff; border-radius:18px; padding:${isMobile ? '40px' : '34px'}; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; }
 .logo-card{ margin-bottom:20px; }
-.logo-card img{ width:132px; height:auto; display:block; border-radius:14px; }
-.brand-name{ font-size:20px; font-weight:900; letter-spacing:.10em; margin-bottom:6px; }
-.brand-sub{ font-size:14px; color:#E5E7EB; }
-.doc-type{ display:flex; align-items:center; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#F8FAFC; margin-bottom:22px; }
+.logo-card img{ width:150px; height:auto; display:block; border-radius:14px; }
+.brand-name{ font-size:${isMobile ? '24px' : '20px'}; font-weight:900; letter-spacing:.10em; margin-bottom:6px; }
+.brand-sub{ font-size:${isMobile ? '16px' : '14px'}; color:#E5E7EB; }
+.doc-type{ display:flex; align-items:center; font-size:14px; letter-spacing:.12em; text-transform:uppercase; color:#F8FAFC; margin-bottom:22px; }
 .doc-type::before{ content:""; width:32px; height:2px; background:var(--red); margin-right:12px; }
-.cover-title{ font-size:58px; line-height:1.02; letter-spacing:-.055em; font-weight:900; margin-bottom:26px; max-width:760px; }
-.cover-desc{ font-size:24px; line-height:1.75; color:#F3F4F6; max-width:720px; }
+.cover-title{ font-size:${isMobile ? '64px' : '58px'}; line-height:1.05; letter-spacing:-.055em; font-weight:900; margin-bottom:26px; max-width:760px; }
+.cover-desc{ font-size:${isMobile ? '26px' : '20px'}; line-height:1.75; color:#F3F4F6; max-width:720px; }
 .cover-bottom{ display:grid; grid-template-columns:1fr 1fr; gap:24px; border-top:1px solid rgba(255,255,255,.20); padding-top:24px; }
-.meta-label{ font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:#CBD5E1; margin-bottom:6px; font-weight:700; }
-.meta-value{ font-size:16px; color:#fff; font-weight:700; }
-.visual-map{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:26px; display:flex; align-items:center; justify-content:space-between; margin-bottom:46px; }
-.step-label{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#111827; margin-bottom:8px; font-weight:800; }
-.step-value{ font-size:20px; color:var(--text); font-weight:800; }
-.map-arrow{ color:var(--red); font-size:24px; font-weight:900; }
+.meta-label{ font-size:13px; letter-spacing:.10em; text-transform:uppercase; color:#CBD5E1; margin-bottom:6px; font-weight:700; }
+.meta-value{ font-size:18px; color:#fff; font-weight:700; }
+.visual-map{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:30px; display:flex; align-items:center; justify-content:space-between; margin-bottom:46px; }
+.step-label{ font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:#111827; margin-bottom:8px; font-weight:800; }
+.step-value{ font-size:${isMobile ? '22px' : '18px'}; color:var(--text); font-weight:800; }
+.map-arrow{ color:var(--red); font-size:28px; font-weight:900; }
 .section{ margin-bottom:44px; padding-bottom:34px; border-bottom:1px solid #E5E7EB; }
 .section::after{ content:""; display:block; width:60px; height:3px; background:var(--red); margin-top:26px; }
-h2{ font-size:38px; line-height:1.15; margin-bottom:24px; color:var(--text); font-weight:900; letter-spacing:-.03em; }
-p{ margin-bottom:24px; color:var(--muted); font-size:20px; line-height:1.9; font-weight:500; }
-.signal{ background:#F8FAFC; border-left:4px solid var(--red); padding:22px; margin-bottom:24px; border-radius:0 10px 10px 0; color:#111827; font-weight:800; font-size:20px; line-height:1.8; }
-.step{ border-left:3px solid var(--red); padding-left:20px; margin-bottom:24px; color:#111827; font-size:20px; line-height:1.85; font-weight:600; }
-.bullet{ padding-left:10px; font-weight:500; }
-.closing{ background:var(--dark2); border-radius:18px; padding:45px; margin-top:40px; break-inside:avoid; }
-.closing h3{ color:#fff; font-size:46px; line-height:1.08; letter-spacing:-.05em; margin-bottom:24px; font-weight:900; }
-.closing p{ color:#F3F4F6; font-size:22px; line-height:1.9; margin-bottom:0; }
+
+h2{ font-size:${isMobile ? '42px' : '34px'}; line-height:1.15; margin-bottom:24px; color:var(--text); font-weight:900; letter-spacing:-.03em; }
+p{ margin-bottom:24px; color:var(--muted); font-size:${isMobile ? '24px' : '16px'}; line-height:${isMobile ? '1.8' : '1.9'}; font-weight:500; }
+.signal{ background:#F8FAFC; border-left:4px solid var(--red); padding:26px; margin-bottom:24px; border-radius:0 10px 10px 0; color:#111827; font-weight:800; font-size:${isMobile ? '24px' : '17px'}; line-height:1.7; }
+.step{ border-left:3px solid var(--red); padding-left:24px; margin-bottom:24px; color:#111827; font-size:${isMobile ? '24px' : '17px'}; line-height:1.7; font-weight:600; }
+.bullet{ padding-left:14px; font-weight:500; }
+
+.closing{ background:var(--dark2); border-radius:18px; padding:50px; margin-top:40px; }
+.closing h3{ color:#fff; font-size:${isMobile ? '50px' : '42px'}; line-height:1.1; letter-spacing:-.05em; margin-bottom:24px; font-weight:900; }
+.closing p{ color:#F3F4F6; font-size:${isMobile ? '26px' : '18px'}; line-height:1.8; margin-bottom:0; }
 </style>
 </head>
 <body>
@@ -215,7 +223,7 @@ p{ margin-bottom:24px; color:var(--muted); font-size:20px; line-height:1.9; font
       displayHeaderFooter: true,
       headerTemplate: `<span></span>`,
       footerTemplate: `
-        <div style="width:100%;font-family:Arial,sans-serif;font-size:10px;color:#374151;padding:0 18mm;">
+        <div style="width:100%;font-family:Arial,sans-serif;font-size:12px;color:#374151;padding:0 18mm;">
           <div style="border-top:1px solid #D1D5DB;padding-top:8px;display:flex;justify-content:space-between;">
             <span style="font-weight:700;">Problema Cero — Dirección Estratégica</span>
             <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
@@ -229,7 +237,7 @@ p{ margin-bottom:24px; color:var(--muted); font-size:20px; line-height:1.9; font
 
     setTimeout(() => {
       fs.unlink(filePath, (err) => {
-        if (!err) console.log(`Archivo eliminado: ${nombreArchivo}`);
+        if (!err) console.log(`Archivo temporal eliminado: ${nombreArchivo}`);
       });
     }, 300000);
 
