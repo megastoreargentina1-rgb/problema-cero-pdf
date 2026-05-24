@@ -9,7 +9,6 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
-// 1. ESTA ES LA MAGIA PARA IPHONE: CARPETA TEMPORAL PÚBLICA
 const tmpDir = path.join(__dirname, "tmp_pdfs");
 if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir);
@@ -23,21 +22,17 @@ try {
   if (fs.existsSync(logoPath)) {
     const logoData = fs.readFileSync(logoPath);
     logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
-    console.log("Logo cargado correctamente");
   }
 } catch (error) {
   console.error("Error leyendo logo:", error);
 }
 
 app.get("/", (req, res) => {
-  res.send("Problema Cero PDF Premium activo con Storage Temporal");
+  res.send("Problema Cero PDF Premium activo con tipografía gigante");
 });
 
 function escapeHtml(text = "") {
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function limpiarContenido(text = "") {
@@ -51,17 +46,11 @@ function limpiarContenido(text = "") {
 }
 
 function normalizarLinea(linea = "") {
-  return linea
-    .replace(/[⚡🔴🧠⚠️🚀💰🔥🔎🧭🎯🛑🔧📅📆📌💬📊👉]/g, "")
-    .replace(/^\*+\s*/g, "")
-    .trim();
+  return linea.replace(/[⚡🔴🧠⚠️🚀💰🔥🔎🧭🎯🛑🔧📅📆📌💬📊👉]/g, "").replace(/^\*+\s*/g, "").trim();
 }
 
 function esTitulo(linea = "") {
-  const t = normalizarLinea(linea)
-    .replace(/:$/g, "")
-    .toUpperCase();
-
+  const t = normalizarLinea(linea).replace(/:$/g, "").toUpperCase();
   const titulos = [
     "RESUMEN RÁPIDO", "RESUMEN RAPIDO", "TU PROBLEMA PRINCIPAL",
     "QUÉ ESTÁ PASANDO", "QUE ESTÁ PASANDO", "QUÉ DEBERÍAS CORREGIR PRIMERO",
@@ -69,68 +58,42 @@ function esTitulo(linea = "") {
     "QUE SIGNIFICA", "CAUSA REAL", "ACCIÓN CONCRETA", "ACCION CONCRETA",
     "IMPACTO", "CIERRE", "QUÉ CORREGIR PRIMERO", "PLAN DE ACCIÓN"
   ];
-
   return titulos.some(x => t === x || t.includes(x));
 }
 
 function convertirContenidoAHTML(text = "") {
-  const lineas = limpiarContenido(text)
-    .split("\n")
-    .map(l => l.trim())
-    .filter(Boolean);
-
+  const lineas = limpiarContenido(text).split("\n").map(l => l.trim()).filter(Boolean);
   let html = "";
   let abierto = false;
 
   function cerrar() {
-    if (abierto) {
-      html += `</section>`;
-      abierto = false;
-    }
+    if (abierto) { html += `</section>`; abierto = false; }
   }
 
   function abrir(titulo) {
     cerrar();
-    html += `
-      <section class="section block-avoid">
-        <h2>${escapeHtml(normalizarLinea(titulo).replace(/:$/g, ""))}</h2>
-    `;
+    html += `<section class="section block-avoid"><h2>${escapeHtml(normalizarLinea(titulo).replace(/:$/g, ""))}</h2>`;
     abierto = true;
   }
 
   lineas.forEach((linea) => {
     const l = normalizarLinea(linea);
     if (!l) return;
-    if (esTitulo(l)) {
-      abrir(l);
-      return;
-    }
+    if (esTitulo(l)) { abrir(l); return; }
     if (!abierto) abrir("Lectura estratégica");
 
     if (l.startsWith("-") || l.startsWith("*") || l.startsWith("•")) {
-      html += `
-        <p class="bullet">
-          ${escapeHtml(l.replace(/^[-*•]\s*/, "• "))}
-        </p>
-      `;
+      html += `<p class="bullet">${escapeHtml(l.replace(/^[-*•]\s*/, "• "))}</p>`;
       return;
     }
 
     if (/^\d+\./.test(l)) {
-      html += `
-        <div class="step block-avoid">
-          ${escapeHtml(l)}
-        </div>
-      `;
+      html += `<div class="step block-avoid">${escapeHtml(l)}</div>`;
       return;
     }
 
     if (l.includes(":") && l.length < 120) {
-      html += `
-        <div class="signal block-avoid">
-          ${escapeHtml(l)}
-        </div>
-      `;
+      html += `<div class="signal block-avoid">${escapeHtml(l)}</div>`;
       return;
     }
 
@@ -143,25 +106,14 @@ function convertirContenidoAHTML(text = "") {
 
 app.post("/generar-pdf", async (req, res) => {
   let browser;
-
   try {
     const { titulo, contenido } = req.body;
-    const fecha = new Date().toLocaleDateString("es-AR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric"
-    });
-
+    const fecha = new Date().toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric" });
     const contenidoHTML = convertirContenidoAHTML(contenido || "");
 
     browser = await puppeteer.launch({
       headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu"
-      ]
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
 
     const page = await browser.newPage();
@@ -178,12 +130,15 @@ app.post("/generar-pdf", async (req, res) => {
 :root{ --dark:#0B132B; --dark2:#111827; --text:#111827; --muted:#1F2937; --soft:#F8FAFC; --red:#D32F2F; --border:#E5E7EB; }
 *{ box-sizing:border-box; margin:0; padding:0; }
 html,body{ font-family:'Inter',Arial,sans-serif; background:#fff; color:var(--text); }
-body{ font-size:16px; line-height:1.85; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+/* LETRAS MÁS GRANDES AQUÍ */
+body{ font-size:20px; line-height:1.9; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
 @media print{
   h1,h2,h3{ break-after:avoid; page-break-after:avoid; }
   p,li{ orphans:3; widows:3; }
   .block-avoid, .signal, .step, .visual-map{ break-inside:avoid; page-break-inside:avoid; }
   .cover-wrapper{ break-after:page; page-break-after:always; }
+  /* OBLIGAMOS AL BLOQUE NEGRO A SALTAR A OTRA HOJA */
+  .closing{ break-before:page; page-break-before:always; }
 }
 .cover-wrapper{ height:238mm; background:linear-gradient(160deg,#0B132B 0%,#111827 100%); color:#fff; border-radius:18px; padding:34px 34px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; }
 .logo-card{ margin-bottom:20px; }
@@ -193,24 +148,27 @@ body{ font-size:16px; line-height:1.85; -webkit-font-smoothing:antialiased; text
 .doc-type{ display:flex; align-items:center; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#F8FAFC; margin-bottom:22px; }
 .doc-type::before{ content:""; width:32px; height:2px; background:var(--red); margin-right:12px; }
 .cover-title{ font-size:58px; line-height:1.02; letter-spacing:-.055em; font-weight:900; margin-bottom:26px; max-width:760px; }
-.cover-desc{ font-size:20px; line-height:1.75; color:#F3F4F6; max-width:720px; }
+/* DESCRIPCION PORTADA MAS GRANDE */
+.cover-desc{ font-size:24px; line-height:1.75; color:#F3F4F6; max-width:720px; }
 .cover-bottom{ display:grid; grid-template-columns:1fr 1fr; gap:24px; border-top:1px solid rgba(255,255,255,.20); padding-top:24px; }
 .meta-label{ font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:#CBD5E1; margin-bottom:6px; font-weight:700; }
 .meta-value{ font-size:16px; color:#fff; font-weight:700; }
 .visual-map{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:26px; display:flex; align-items:center; justify-content:space-between; margin-bottom:46px; }
 .step-label{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#111827; margin-bottom:8px; font-weight:800; }
-.step-value{ font-size:18px; color:var(--text); font-weight:800; }
+.step-value{ font-size:20px; color:var(--text); font-weight:800; }
 .map-arrow{ color:var(--red); font-size:24px; font-weight:900; }
 .section{ margin-bottom:44px; padding-bottom:34px; border-bottom:1px solid #E5E7EB; }
 .section::after{ content:""; display:block; width:60px; height:3px; background:var(--red); margin-top:26px; }
-h2{ font-size:34px; line-height:1.15; margin-bottom:24px; color:var(--text); font-weight:900; letter-spacing:-.03em; }
-p{ margin-bottom:24px; color:var(--muted); font-size:16px; line-height:1.9; font-weight:500; }
-.signal{ background:#F8FAFC; border-left:4px solid var(--red); padding:22px; margin-bottom:24px; border-radius:0 10px 10px 0; color:#111827; font-weight:800; font-size:17px; line-height:1.8; }
-.step{ border-left:3px solid var(--red); padding-left:20px; margin-bottom:24px; color:#111827; font-size:17px; line-height:1.85; font-weight:600; }
+/* TITULOS MAS GRANDES */
+h2{ font-size:38px; line-height:1.15; margin-bottom:24px; color:var(--text); font-weight:900; letter-spacing:-.03em; }
+p{ margin-bottom:24px; color:var(--muted); font-size:20px; line-height:1.9; font-weight:500; }
+.signal{ background:#F8FAFC; border-left:4px solid var(--red); padding:22px; margin-bottom:24px; border-radius:0 10px 10px 0; color:#111827; font-weight:800; font-size:20px; line-height:1.8; }
+.step{ border-left:3px solid var(--red); padding-left:20px; margin-bottom:24px; color:#111827; font-size:20px; line-height:1.85; font-weight:600; }
 .bullet{ padding-left:10px; font-weight:500; }
-.closing{ background:var(--dark2); border-radius:18px; padding:42px; margin-top:56px; break-inside:avoid; }
-.closing h3{ color:#fff; font-size:42px; line-height:1.08; letter-spacing:-.05em; margin-bottom:24px; font-weight:900; }
-.closing p{ color:#F3F4F6; font-size:18px; line-height:1.9; }
+/* BLOQUE NEGRO SEPARADO Y PROTEGIDO */
+.closing{ background:var(--dark2); border-radius:18px; padding:45px; margin-top:40px; break-inside:avoid; }
+.closing h3{ color:#fff; font-size:46px; line-height:1.08; letter-spacing:-.05em; margin-bottom:24px; font-weight:900; }
+.closing p{ color:#F3F4F6; font-size:22px; line-height:1.9; margin-bottom:0; }
 </style>
 </head>
 <body>
@@ -250,12 +208,11 @@ p{ margin-bottom:24px; color:var(--muted); font-size:16px; line-height:1.9; font
 
     await page.setContent(html, { waitUntil: "domcontentloaded" });
 
-    // 2. CREAMOS EL NOMBRE ÚNICO Y GUARDAMOS EN DISCO
     const nombreArchivo = `Diagnostico_${Date.now()}_${Math.floor(Math.random() * 1000)}.pdf`;
     const filePath = path.join(tmpDir, nombreArchivo);
 
     await page.pdf({
-      path: filePath, // Acá le decimos que lo guarde en la carpeta
+      path: filePath,
       format: "A4",
       printBackground: true,
       displayHeaderFooter: true,
@@ -273,23 +230,17 @@ p{ margin-bottom:24px; color:var(--muted); font-size:16px; line-height:1.9; font
 
     await browser.close();
 
-    // 3. PROGRAMAMOS LA AUTODESTRUCCIÓN DEL ARCHIVO EN 5 MINUTOS (300000 milisegundos)
     setTimeout(() => {
       fs.unlink(filePath, (err) => {
-        if (!err) console.log(`Archivo temporal eliminado de la memoria: ${nombreArchivo}`);
+        if (!err) console.log(`Archivo eliminado: ${nombreArchivo}`);
       });
     }, 300000);
 
-    // 4. LE ENVIAMOS AL FRONTEND EL LINK EXACTO PARA QUE SAFARI LO ABRA
     const fileUrl = `https://problema-cero-pdf-production.up.railway.app/descargas/${nombreArchivo}`;
-
-    // Respuesta limpia
     res.json({ ok: true, url: fileUrl });
 
   } catch(error) {
-    if(browser){
-      await browser.close();
-    }
+    if(browser) await browser.close();
     console.error("Error generando PDF:", error);
     res.status(500).json({ ok:false, error:error.message });
   }
