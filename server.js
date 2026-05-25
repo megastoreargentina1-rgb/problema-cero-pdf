@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Premium Problema Cero: Biónico + Sinóptico Activo");
+  res.send("Motor PDF Premium Problema Cero: Biónico + Sinóptico + Bimodal Activo");
 });
 
 function limpiarTexto(texto) {
@@ -77,8 +77,16 @@ function procesarMarkdownAHTML(textoCrudo) {
   return htmlResult;
 }
 
-function generarPlantillaPDF(textoDiagnostico) {
+function generarPlantillaPDF(textoDiagnostico, isMobile) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
+  
+  // Variables Bimodales Matemáticas
+  const fontSize = isMobile ? "18px" : "14px";
+  const lineHeight = isMobile ? "1.8" : "1.7";
+  const h1Size = isMobile ? "54px" : "48px";
+  const titleSize = isMobile ? "18px" : "15px";
+  const bulletSize = isMobile ? "24px" : "20px";
+  const bulletTop = isMobile ? "-2px" : "-4px";
 
   return `
   <!DOCTYPE html>
@@ -99,8 +107,8 @@ function generarPlantillaPDF(textoDiagnostico) {
         font-family: 'Inter', sans-serif;
         color: var(--texto-principal);
         background-color: #ffffff;
-        line-height: 1.7; 
-        font-size: 14px;
+        line-height: ${lineHeight}; 
+        font-size: ${fontSize};
         margin: 0;
         padding: 0;
       }
@@ -118,7 +126,7 @@ function generarPlantillaPDF(textoDiagnostico) {
          background-color: #ffffff;
          border-bottom: 12px solid var(--rojo-marca);
       }
-      .cover h1 { font-size: 48px; font-weight: 700; margin-bottom: 10px; letter-spacing: -1px; }
+      .cover h1 { font-size: ${h1Size}; font-weight: 700; margin-bottom: 10px; letter-spacing: -1px; }
       .cover h1 span { color: var(--rojo-marca); }
       .cover p { font-size: 14px; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
       
@@ -130,7 +138,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       .box-executive p, .box-executive .bionic-bold { color: #f3f4f6; font-weight: 500; }
       .box-executive .bionic-bold { color: #ffffff; font-weight: 700; }
       
-      .section-title { font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+      .section-title { font-size: ${titleSize}; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
       .box-standard .section-title { color: var(--texto-principal); }
       .box-alert .section-title { color: var(--rojo-marca); }
       .box-action .section-title { color: #1e40af; }
@@ -141,7 +149,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       
       .premium-list { list-style: none; padding-left: 0; margin-top: 10px; margin-bottom: 0; }
       .list-item { position: relative; padding-left: 24px; margin-bottom: 12px; }
-      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 20px; position: absolute; left: 0; top: -4px; }
+      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: ${bulletTop}; }
       .box-action .list-item::before { color: #3b82f6; }
       .box-executive .list-item::before { color: var(--rojo-marca); }
     </style>
@@ -160,21 +168,18 @@ function generarPlantillaPDF(textoDiagnostico) {
   `;
 }
 
-// RED DE ARRASTRE: Atrapa CUALQUIER petición POST sin importar la ruta
 app.post("/*", async (req, res) => {
-  console.log(`📥 Petición de PDF recibida en la ruta: ${req.path}`);
   let browser = null;
   
   try {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
+    const isMobile = req.body.isMobile === true;
     
     if (!diagnostico) {
-      console.log("⚠️ Error: El frontend no envió el texto del diagnóstico.");
       return res.status(400).json({ error: "No se envió texto para el PDF" });
     }
 
-    console.log("✅ Texto recibido. Iniciando motor de renderizado...");
-    const htmlFinal = generarPlantillaPDF(diagnostico);
+    const htmlFinal = generarPlantillaPDF(diagnostico, isMobile);
 
     browser = await puppeteer.launch({
       headless: "new",
@@ -197,8 +202,6 @@ app.post("/*", async (req, res) => {
         </div>
       `
     });
-
-    console.log("🚀 PDF generado con éxito. Enviando al cliente...");
     
     res.set({
       "Content-Type": "application/pdf",
@@ -217,4 +220,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Red de arrastre activa en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Activo en puerto ${PORT}`));
