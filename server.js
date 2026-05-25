@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const puppeteer = require("puppeteer");
-require("dotenv").config();
 
 const app = express();
 app.use(cors());
@@ -18,7 +17,7 @@ function limpiarTexto(texto) {
 
 // Algoritmo de Lectura Biónica (Anti-Fatiga Visual)
 function aplicarLecturaBionica(texto) {
-  // Solo aplica a palabras de 4 o más letras para no ensuciar conectores (y, de, la, el)
+  // Solo aplica a palabras de 4 o más letras para no ensuciar conectores
   return texto.replace(/\b([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{4,})\b/g, (match) => {
     let mid = Math.ceil(match.length / 2);
     return `<span class="bionic-bold">${match.substring(0, mid)}</span>${match.substring(mid)}`;
@@ -52,20 +51,19 @@ function procesarMarkdownAHTML(textoCrudo) {
       
       // Asignar estilos de caja sinóptica según el tipo de sección
       let claseCaja = 'box-standard';
-      if (icono === '⚠️' || icono === '🛑') claseCaja = 'box-alert'; // Cajas rojas para alertas
-      if (icono === '🚀' || icono === '📅' || icono === '📆' || icono === '🔧') claseCaja = 'box-action'; // Cajas grises/timeline para acción
-      if (icono === '⚡' || icono === '🧭') claseCaja = 'box-executive'; // Cajas oscuras para resúmenes
+      if (icono === '⚠️' || icono === '🛑') claseCaja = 'box-alert'; 
+      if (icono === '🚀' || icono === '📅' || icono === '📆' || icono === '🔧') claseCaja = 'box-action'; 
+      if (icono === '⚡' || icono === '🧭') claseCaja = 'box-executive'; 
       
       htmlResult += `<div class="caja-sinoptica ${claseCaja}">`;
       htmlResult += `<h2 class="section-title"><span class="icon">${icono}</span> ${textoTitulo}</h2>`;
       return;
     }
 
-    // 3. Procesamiento de Listas (Líneas de tiempo / Grillas)
+    // 3. Procesamiento de Listas
     if (limpia.startsWith('- ')) {
       if (!enLista) { htmlResult += '<ul class="premium-list">'; enLista = true; }
       let itemTexto = limpia.substring(2);
-      // Aplicar negritas nativas de Markdown
       itemTexto = itemTexto.replace(/\*\*(.*?)\*\*/g, '<strong class="highlight">$1</strong>');
       htmlResult += `<li class="list-item">${itemTexto}</li>`;
       return;
@@ -77,15 +75,12 @@ function procesarMarkdownAHTML(textoCrudo) {
     // 4. Procesamiento de Párrafos con Lectura Biónica
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong class="highlight">$1</strong>');
-      // Inyectar el algoritmo Biónico al párrafo
       parrafo = aplicarLecturaBionica(parrafo);
       htmlResult += `<p>${parrafo}</p>`;
     }
   });
 
   if (enLista) htmlResult += '</ul></div>';
-  
-  // Cerrar cualquier div suelto
   return htmlResult;
 }
 
@@ -111,7 +106,7 @@ function generarPlantillaPDF(textoDiagnostico) {
         font-family: 'Inter', sans-serif;
         color: var(--texto-principal);
         background-color: #ffffff;
-        line-height: 1.7; /* Mayor espaciado para evitar fatiga */
+        line-height: 1.7; 
         font-size: 14px;
         margin: 0;
         padding: 0;
@@ -150,10 +145,9 @@ function generarPlantillaPDF(textoDiagnostico) {
         border-radius: 8px;
         padding: 24px;
         margin-bottom: 24px;
-        page-break-inside: avoid; /* Evita que el cuadro se corte por la mitad al cambiar de página */
+        page-break-inside: avoid; 
       }
       
-      /* Variantes de Cuadros */
       .box-standard { background-color: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid var(--texto-principal); }
       .box-alert { background-color: var(--rojo-fondo); border: 1px solid #fecaca; border-left: 4px solid var(--rojo-marca); }
       .box-action { background-color: var(--gris-fondo); border: 1px solid #e5e7eb; border-left: 4px solid #3b82f6; }
@@ -182,7 +176,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       p { margin-top: 0; margin-bottom: 16px; text-align: left; }
       .highlight { background-color: #fef08a; padding: 0 4px; color: #000; font-weight: 600; border-radius: 2px; }
       
-      /* Listas (Timeline Style) */
+      /* Listas */
       .premium-list {
         list-style: none;
         padding-left: 0;
