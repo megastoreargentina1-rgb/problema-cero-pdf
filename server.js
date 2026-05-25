@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Estética Premium + Tamaño Calibrado Activo");
+  res.send("Motor PDF Problema Cero: Estética Premium + Logo + Letra Maximizada Activo");
 });
 
 function limpiarTexto(texto) {
@@ -42,7 +42,6 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (limpia.startsWith('- ')) {
       if (!enLista) { htmlResult += '<ul class="premium-list">'; enLista = true; }
       let itemTexto = limpia.substring(2);
-      // Remarcado elegante, sin engrosar de más
       itemTexto = itemTexto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       htmlResult += `<li class="list-item">${itemTexto}</li>`;
       return;
@@ -64,10 +63,11 @@ function procesarMarkdownAHTML(textoCrudo) {
 function generarPlantillaPDF(textoDiagnostico, isMobile) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
   
-  // Lógica Bimodal Calibrada: Grande y legible en móvil, normal en PC.
-  const fontSize = isMobile ? "20px" : "15px"; 
-  const lineHeight = isMobile ? "1.7" : "1.6";
-  const titleSize = isMobile ? "24px" : "18px";
+  // Lógica Bimodal Maximizada: 24px para móvil (lectura extrema), 15px para PC (ejecutiva).
+  const fontSize = isMobile ? "24px" : "15px"; 
+  const lineHeight = isMobile ? "1.6" : "1.7";
+  const titleSize = isMobile ? "28px" : "18px";
+  const bulletSize = isMobile ? "32px" : "24px";
   
   // Generador de Fecha Actual
   const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -96,7 +96,7 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
       .page-content { padding: 60px 80px; }
       .page-break { page-break-before: always; height: 1px; }
       
-      /* PORTADA NEGRA EJECUTIVA (INTACTA) */
+      /* PORTADA NEGRA EJECUTIVA */
       .cover {
          height: 100vh;
          display: flex;
@@ -107,6 +107,10 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
          color: #ffffff;
          padding: 0 80px;
          box-sizing: border-box;
+      }
+      .logo-portada {
+         width: 140px; 
+         margin-bottom: 30px;
       }
       .cover h1 { font-size: 42px; color: var(--rojo-marca); margin-bottom: 30px; letter-spacing: 2px; }
       .cover .subtitle { font-size: 24px; font-weight: 400; margin-bottom: 5px; color: #d1d5db; }
@@ -122,7 +126,7 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
       .cover-footer .label { font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
       .cover-footer .value { font-size: 18px; color: #ffffff; margin-bottom: 20px; font-weight: 600; }
       
-      /* ESTILOS DEL CUERPO (LIMPIOS Y ELEGANTES) */
+      /* ESTILOS DEL CUERPO */
       .section-title { 
         font-size: ${titleSize}; 
         color: var(--rojo-marca); 
@@ -130,20 +134,23 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
         letter-spacing: 1.5px; 
         font-weight: 700; 
         margin-top: 0; 
-        margin-bottom: 20px; 
+        margin-bottom: 24px; 
         border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 10px;
+        padding-bottom: 12px;
       }
-      p { margin-top: 0; margin-bottom: 20px; text-align: left; color: #1f2937; font-weight: 400; }
+      p { margin-top: 0; margin-bottom: 24px; text-align: left; color: #1f2937; font-weight: 400; }
       strong { font-weight: 700; color: #000000; }
       
-      .premium-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 20px; }
-      .list-item { position: relative; padding-left: 28px; margin-bottom: 15px; color: #1f2937; }
-      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 28px; position: absolute; left: 0; top: -6px; }
+      .premium-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 24px; }
+      .list-item { position: relative; padding-left: 32px; margin-bottom: 18px; color: #1f2937; }
+      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: -6px; }
     </style>
   </head>
   <body>
     <div class="cover">
+      <!-- RUTA DEL LOGO: Asegurate de que esta URL apunte correctamente a la imagen de tu web -->
+      <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
+      
       <h1>PROBLEMA CERO</h1>
       <div class="subtitle">Interconsulta estratégica empresarial</div>
       <div class="private">Informe Privado</div>
