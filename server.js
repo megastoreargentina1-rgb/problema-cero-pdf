@@ -15,9 +15,7 @@ function limpiarTexto(texto) {
   return texto.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// Algoritmo de Lectura Biónica (Anti-Fatiga Visual)
 function aplicarLecturaBionica(texto) {
-  // Solo aplica a palabras de 4 o más letras para no ensuciar conectores
   return texto.replace(/\b([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{4,})\b/g, (match) => {
     let mid = Math.ceil(match.length / 2);
     return `<span class="bionic-bold">${match.substring(0, mid)}</span>${match.substring(mid)}`;
@@ -34,14 +32,12 @@ function procesarMarkdownAHTML(textoCrudo) {
     let limpia = linea.trim();
     if (!limpia) return;
 
-    // 1. Saltos de Página
     if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
       if (enLista) { htmlResult += '</ul></div>'; enLista = false; }
       htmlResult += '<div class="page-break"></div>';
       return;
     }
 
-    // 2. Detección de Títulos y Creación de Cuadros Sinópticos
     const matchTitulo = limpia.match(/^(⚡|🔴|🧠|⚠️|🚀|💰|🔥|🧭|🎯|🛑|🔧|📅|📆|📌|💬|📊)\s(.*)$/);
     if (matchTitulo) {
       if (enLista) { htmlResult += '</ul></div>'; enLista = false; }
@@ -49,7 +45,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       const icono = matchTitulo[1];
       const textoTitulo = matchTitulo[2];
       
-      // Asignar estilos de caja sinóptica según el tipo de sección
       let claseCaja = 'box-standard';
       if (icono === '⚠️' || icono === '🛑') claseCaja = 'box-alert'; 
       if (icono === '🚀' || icono === '📅' || icono === '📆' || icono === '🔧') claseCaja = 'box-action'; 
@@ -60,7 +55,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // 3. Procesamiento de Listas
     if (limpia.startsWith('- ')) {
       if (!enLista) { htmlResult += '<ul class="premium-list">'; enLista = true; }
       let itemTexto = limpia.substring(2);
@@ -72,7 +66,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       enLista = false;
     }
 
-    // 4. Procesamiento de Párrafos con Lectura Biónica
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong class="highlight">$1</strong>');
       parrafo = aplicarLecturaBionica(parrafo);
@@ -111,21 +104,10 @@ function generarPlantillaPDF(textoDiagnostico) {
         margin: 0;
         padding: 0;
       }
-      .page-content {
-        padding: 40px 60px;
-      }
-      .page-break {
-        page-break-before: always;
-        height: 1px;
-      }
+      .page-content { padding: 40px 60px; }
+      .page-break { page-break-before: always; height: 1px; }
+      .bionic-bold { font-weight: 700; color: #000000; }
       
-      /* Lectura Biónica */
-      .bionic-bold {
-        font-weight: 700;
-        color: #000000;
-      }
-      
-      /* Portada */
       .cover {
          height: 100vh;
          display: flex;
@@ -140,14 +122,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       .cover h1 span { color: var(--rojo-marca); }
       .cover p { font-size: 14px; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
       
-      /* CUADROS SINÓPTICOS */
-      .caja-sinoptica {
-        border-radius: 8px;
-        padding: 24px;
-        margin-bottom: 24px;
-        page-break-inside: avoid; 
-      }
-      
+      .caja-sinoptica { border-radius: 8px; padding: 24px; margin-bottom: 24px; page-break-inside: avoid; }
       .box-standard { background-color: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid var(--texto-principal); }
       .box-alert { background-color: var(--rojo-fondo); border: 1px solid #fecaca; border-left: 4px solid var(--rojo-marca); }
       .box-action { background-color: var(--gris-fondo); border: 1px solid #e5e7eb; border-left: 4px solid #3b82f6; }
@@ -155,48 +130,18 @@ function generarPlantillaPDF(textoDiagnostico) {
       .box-executive p, .box-executive .bionic-bold { color: #f3f4f6; font-weight: 500; }
       .box-executive .bionic-bold { color: #ffffff; font-weight: 700; }
       
-      /* Títulos */
-      .section-title {
-        font-size: 15px;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-        margin-top: 0;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+      .section-title { font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
       .box-standard .section-title { color: var(--texto-principal); }
       .box-alert .section-title { color: var(--rojo-marca); }
       .box-action .section-title { color: #1e40af; }
       .box-executive .section-title { color: #ffffff; border-bottom: 1px solid #374151; padding-bottom: 8px; }
       
-      /* Tipografía General */
       p { margin-top: 0; margin-bottom: 16px; text-align: left; }
       .highlight { background-color: #fef08a; padding: 0 4px; color: #000; font-weight: 600; border-radius: 2px; }
       
-      /* Listas */
-      .premium-list {
-        list-style: none;
-        padding-left: 0;
-        margin-top: 10px;
-        margin-bottom: 0;
-      }
-      .list-item {
-        position: relative;
-        padding-left: 24px;
-        margin-bottom: 12px;
-      }
-      .list-item::before {
-        content: "•";
-        color: var(--rojo-marca);
-        font-weight: bold;
-        font-size: 20px;
-        position: absolute;
-        left: 0;
-        top: -4px;
-      }
+      .premium-list { list-style: none; padding-left: 0; margin-top: 10px; margin-bottom: 0; }
+      .list-item { position: relative; padding-left: 24px; margin-bottom: 12px; }
+      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 20px; position: absolute; left: 0; top: -4px; }
       .box-action .list-item::before { color: #3b82f6; }
       .box-executive .list-item::before { color: var(--rojo-marca); }
     </style>
@@ -215,12 +160,20 @@ function generarPlantillaPDF(textoDiagnostico) {
   `;
 }
 
-app.post(["/api/pdf", "/generar-pdf", "/create-pdf", "/pdf"], async (req, res) => {
+// RED DE ARRASTRE: Atrapa CUALQUIER petición POST sin importar la ruta
+app.post("/*", async (req, res) => {
+  console.log(`📥 Petición de PDF recibida en la ruta: ${req.path}`);
   let browser = null;
+  
   try {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
-    if (!diagnostico) return res.status(400).json({ error: "No se envió texto para el PDF" });
+    
+    if (!diagnostico) {
+      console.log("⚠️ Error: El frontend no envió el texto del diagnóstico.");
+      return res.status(400).json({ error: "No se envió texto para el PDF" });
+    }
 
+    console.log("✅ Texto recibido. Iniciando motor de renderizado...");
     const htmlFinal = generarPlantillaPDF(diagnostico);
 
     browser = await puppeteer.launch({
@@ -245,6 +198,8 @@ app.post(["/api/pdf", "/generar-pdf", "/create-pdf", "/pdf"], async (req, res) =
       `
     });
 
+    console.log("🚀 PDF generado con éxito. Enviando al cliente...");
+    
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": "attachment; filename=Auditoria_Ejecutiva_ProblemaCero.pdf",
@@ -254,7 +209,7 @@ app.post(["/api/pdf", "/generar-pdf", "/create-pdf", "/pdf"], async (req, res) =
     res.send(pdfBuffer);
 
   } catch (error) {
-    console.error("Error al generar PDF:", error);
+    console.error("❌ Error al generar PDF:", error);
     res.status(500).json({ error: "Falla interna al generar el documento", detalle: error.message });
   } finally {
     if (browser) await browser.close();
@@ -262,4 +217,4 @@ app.post(["/api/pdf", "/generar-pdf", "/create-pdf", "/pdf"], async (req, res) =
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Motor PDF Problema Cero: Biónico + Sinóptico operando."));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Red de arrastre activa en puerto ${PORT}`));
