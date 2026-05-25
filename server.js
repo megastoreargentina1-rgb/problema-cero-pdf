@@ -7,19 +7,12 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Premium Problema Cero: Biónico + Sinóptico + Bimodal Activo");
+  res.send("Motor PDF Problema Cero: Estética Ejecutiva Original Activa");
 });
 
 function limpiarTexto(texto) {
   if (!texto) return "";
   return texto.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function aplicarLecturaBionica(texto) {
-  return texto.replace(/\b([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{4,})\b/g, (match) => {
-    let mid = Math.ceil(match.length / 2);
-    return `<span class="bionic-bold">${match.substring(0, mid)}</span>${match.substring(mid)}`;
-  });
 }
 
 function procesarMarkdownAHTML(textoCrudo) {
@@ -33,75 +26,63 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (!limpia) return;
 
     if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
-      if (enLista) { htmlResult += '</ul></div>'; enLista = false; }
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
       htmlResult += '<div class="page-break"></div>';
       return;
     }
 
     const matchTitulo = limpia.match(/^(⚡|🔴|🧠|⚠️|🚀|💰|🔥|🧭|🎯|🛑|🔧|📅|📆|📌|💬|📊)\s(.*)$/);
     if (matchTitulo) {
-      if (enLista) { htmlResult += '</ul></div>'; enLista = false; }
-      
-      const icono = matchTitulo[1];
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
       const textoTitulo = matchTitulo[2];
-      
-      let claseCaja = 'box-standard';
-      if (icono === '⚠️' || icono === '🛑') claseCaja = 'box-alert'; 
-      if (icono === '🚀' || icono === '📅' || icono === '📆' || icono === '🔧') claseCaja = 'box-action'; 
-      if (icono === '⚡' || icono === '🧭') claseCaja = 'box-executive'; 
-      
-      htmlResult += `<div class="caja-sinoptica ${claseCaja}">`;
-      htmlResult += `<h2 class="section-title"><span class="icon">${icono}</span> ${textoTitulo}</h2>`;
+      htmlResult += `<h2 class="section-title">${textoTitulo}</h2>`;
       return;
     }
 
     if (limpia.startsWith('- ')) {
       if (!enLista) { htmlResult += '<ul class="premium-list">'; enLista = true; }
       let itemTexto = limpia.substring(2);
-      itemTexto = itemTexto.replace(/\*\*(.*?)\*\*/g, '<strong class="highlight">$1</strong>');
+      // Remarcado elegante sin etiquetas raras
+      itemTexto = itemTexto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       htmlResult += `<li class="list-item">${itemTexto}</li>`;
       return;
     } else if (enLista) {
-      htmlResult += '</ul></div>';
+      htmlResult += '</ul>';
       enLista = false;
     }
 
     if (!limpia.startsWith('<')) {
-      let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong class="highlight">$1</strong>');
-      parrafo = aplicarLecturaBionica(parrafo);
+      let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       htmlResult += `<p>${parrafo}</p>`;
     }
   });
 
-  if (enLista) htmlResult += '</ul></div>';
+  if (enLista) htmlResult += '</ul>';
   return htmlResult;
 }
 
 function generarPlantillaPDF(textoDiagnostico, isMobile) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
   
-  // Variables Bimodales Matemáticas
-  const fontSize = isMobile ? "18px" : "14px";
-  const lineHeight = isMobile ? "1.8" : "1.7";
-  const h1Size = isMobile ? "54px" : "48px";
-  const titleSize = isMobile ? "18px" : "15px";
-  const bulletSize = isMobile ? "24px" : "20px";
-  const bulletTop = isMobile ? "-2px" : "-4px";
+  // Lógica Bimodal para legibilidad perfecta
+  const fontSize = isMobile ? "17px" : "14px";
+  const lineHeight = isMobile ? "1.8" : "1.6";
+  const titleSize = isMobile ? "20px" : "16px";
+  
+  // Generador de Fecha Actual
+  const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
+  const fechaHoy = new Date().toLocaleDateString('es-AR', opcionesFecha);
 
   return `
   <!DOCTYPE html>
   <html>
   <head>
     <meta charset="utf-8">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
       :root {
-        --rojo-marca: #b91c1c;
-        --rojo-fondo: #fef2f2;
-        --texto-principal: #1f2937;
-        --texto-secundario: #4b5563;
-        --gris-fondo: #f9fafb;
-        --oscuro-fondo: #111827;
+        --rojo-marca: #dc2626;
+        --texto-principal: #111827;
       }
       body {
         font-family: 'Inter', sans-serif;
@@ -112,54 +93,77 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
         margin: 0;
         padding: 0;
       }
-      .page-content { padding: 40px 60px; }
+      .page-content { padding: 50px 70px; }
       .page-break { page-break-before: always; height: 1px; }
-      .bionic-bold { font-weight: 700; color: #000000; }
       
+      /* PORTADA NEGRA EJECUTIVA (COMO LA ORIGINAL) */
       .cover {
          height: 100vh;
          display: flex;
          flex-direction: column;
          justify-content: center;
-         align-items: center;
-         text-align: center;
-         background-color: #ffffff;
-         border-bottom: 12px solid var(--rojo-marca);
+         align-items: flex-start;
+         background-color: #0a0a0a;
+         color: #ffffff;
+         padding: 0 80px;
+         box-sizing: border-box;
       }
-      .cover h1 { font-size: ${h1Size}; font-weight: 700; margin-bottom: 10px; letter-spacing: -1px; }
-      .cover h1 span { color: var(--rojo-marca); }
-      .cover p { font-size: 14px; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+      .cover h1 { font-size: 38px; color: var(--rojo-marca); margin-bottom: 30px; letter-spacing: 2px; }
+      .cover .subtitle { font-size: 22px; font-weight: 400; margin-bottom: 5px; color: #d1d5db; }
+      .cover .private { font-size: 16px; font-weight: 700; margin-bottom: 40px; color: #9ca3af; letter-spacing: 3px; text-transform: uppercase; }
+      .cover .diag-title { font-size: 48px; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
+      .cover .description { font-size: 16px; color: #9ca3af; max-width: 500px; border-left: 3px solid var(--rojo-marca); padding-left: 20px; line-height: 1.6; }
       
-      .caja-sinoptica { border-radius: 8px; padding: 24px; margin-bottom: 24px; page-break-inside: avoid; }
-      .box-standard { background-color: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid var(--texto-principal); }
-      .box-alert { background-color: var(--rojo-fondo); border: 1px solid #fecaca; border-left: 4px solid var(--rojo-marca); }
-      .box-action { background-color: var(--gris-fondo); border: 1px solid #e5e7eb; border-left: 4px solid #3b82f6; }
-      .box-executive { background-color: var(--oscuro-fondo); color: #f9fafb; border-left: 4px solid var(--rojo-marca); }
-      .box-executive p, .box-executive .bionic-bold { color: #f3f4f6; font-weight: 500; }
-      .box-executive .bionic-bold { color: #ffffff; font-weight: 700; }
+      .cover-footer {
+         position: absolute;
+         bottom: 80px;
+         left: 80px;
+      }
+      .cover-footer .label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+      .cover-footer .value { font-size: 16px; color: #ffffff; margin-bottom: 20px; font-weight: 600; }
       
-      .section-title { font-size: ${titleSize}; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-      .box-standard .section-title { color: var(--texto-principal); }
-      .box-alert .section-title { color: var(--rojo-marca); }
-      .box-action .section-title { color: #1e40af; }
-      .box-executive .section-title { color: #ffffff; border-bottom: 1px solid #374151; padding-bottom: 8px; }
+      /* ESTILOS DEL CUERPO (LIMPIOS Y OSCUROS) */
+      .section-title { 
+        font-size: ${titleSize}; 
+        color: var(--rojo-marca); 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+        font-weight: 700; 
+        margin-top: 0; 
+        margin-bottom: 20px; 
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 10px;
+      }
+      p { margin-top: 0; margin-bottom: 20px; text-align: left; color: #1f2937; font-weight: 400; }
+      strong { font-weight: 700; color: #000000; }
       
-      p { margin-top: 0; margin-bottom: 16px; text-align: left; }
-      .highlight { background-color: #fef08a; padding: 0 4px; color: #000; font-weight: 600; border-radius: 2px; }
-      
-      .premium-list { list-style: none; padding-left: 0; margin-top: 10px; margin-bottom: 0; }
-      .list-item { position: relative; padding-left: 24px; margin-bottom: 12px; }
-      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: ${bulletTop}; }
-      .box-action .list-item::before { color: #3b82f6; }
-      .box-executive .list-item::before { color: var(--rojo-marca); }
+      .premium-list { list-style: none; padding-left: 0; margin-top: 10px; margin-bottom: 20px; }
+      .list-item { position: relative; padding-left: 24px; margin-bottom: 15px; color: #1f2937; }
+      .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 24px; position: absolute; left: 0; top: -6px; }
     </style>
   </head>
   <body>
     <div class="cover">
-      <h1>Problema <span>Cero</span></h1>
-      <p>Reporte Estratégico Ejecutivo</p>
+      <h1>PROBLEMA CERO</h1>
+      <div class="subtitle">Interconsulta estratégica empresarial</div>
+      <div class="private">Informe Privado</div>
+      
+      <div class="diag-title">Diagnóstico<br>estratégico</div>
+      
+      <div class="description">
+        Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
+      </div>
+
+      <div class="cover-footer">
+        <div class="label">Fecha de emisión</div>
+        <div class="value">${fechaHoy}</div>
+        
+        <div class="label">Dirección Estratégica</div>
+        <div class="value">Lic. Hernán Mariano Waisman</div>
+      </div>
     </div>
     <div class="page-break"></div>
+
     <div class="page-content">
       ${contenidoHTML}
     </div>
@@ -196,16 +200,16 @@ app.post("/*", async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
       footerTemplate: `
-        <div style="width: 100%; font-size: 9px; padding: 0 60px; display: flex; justify-content: space-between; color: #9ca3af; font-family: 'Helvetica Neue', sans-serif;">
-          <span>CONFIDENCIAL - Problema Cero</span>
-          <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+        <div style="width: 100%; font-size: 9px; padding: 0 70px; display: flex; justify-content: space-between; color: #6b7280; font-family: 'Helvetica Neue', sans-serif;">
+          <span>Problema Cero Dirección Estratégica</span>
+          <span>Página <span class="pageNumber"></span></span>
         </div>
       `
     });
     
     res.set({
       "Content-Type": "application/pdf",
-      "Content-Disposition": "attachment; filename=Auditoria_Ejecutiva_ProblemaCero.pdf",
+      "Content-Disposition": "attachment; filename=Diagnostico_ProblemaCero.pdf",
       "Content-Length": pdfBuffer.length
     });
 
@@ -220,4 +224,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Estética Original activa en puerto ${PORT}`));
