@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Cierre Premium y Logo Activo");
+  res.send("Motor PDF Problema Cero: Portada Centrada Premium Activa");
 });
 
 function limpiarTexto(texto) {
@@ -32,7 +32,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // Detección del bloque de cierre para crear la caja premium
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
@@ -108,20 +107,35 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
       .page-content { padding: 60px 80px; }
       .page-break { page-break-before: always; height: 1px; }
       
+      /* NUEVA PORTADA CENTRALIZADA Y NEGRO PURO */
       .cover {
          height: 100vh; display: flex; flex-direction: column; justify-content: center;
-         align-items: flex-start; background-color: #0a0a0a; color: #ffffff; padding: 0 80px; box-sizing: border-box;
+         align-items: center; text-align: center; 
+         background-color: #000000; /* Negro puro para fundir el logo */
+         color: #ffffff; padding: 0 80px; box-sizing: border-box;
       }
-      .logo-portada { width: 140px; margin-bottom: 30px; }
-      .cover h1 { font-size: 42px; color: var(--rojo-marca); margin-bottom: 30px; letter-spacing: 2px; }
-      .cover .subtitle { font-size: 24px; font-weight: 400; margin-bottom: 5px; color: #d1d5db; }
-      .cover .private { font-size: 16px; font-weight: 700; margin-bottom: 40px; color: #9ca3af; letter-spacing: 3px; text-transform: uppercase; }
-      .cover .diag-title { font-size: 50px; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
-      .cover .description { font-size: 18px; color: #9ca3af; max-width: 600px; border-left: 3px solid var(--rojo-marca); padding-left: 20px; line-height: 1.6; }
+      .logo-portada { 
+         width: 250px; /* Tamaño masivo y autoritario */
+         margin-bottom: 50px; 
+      }
+      .cover h1 { font-size: 46px; color: var(--rojo-marca); margin-top: 0; margin-bottom: 20px; letter-spacing: 3px; }
+      .cover .subtitle { font-size: 24px; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
+      .cover .private { font-size: 16px; font-weight: 700; margin-bottom: 50px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
       
-      .cover-footer { position: absolute; bottom: 80px; left: 80px; }
-      .cover-footer .label { font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-      .cover-footer .value { font-size: 18px; color: #ffffff; margin-bottom: 20px; font-weight: 600; }
+      .cover .diag-title { font-size: 52px; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
+      
+      /* Descripción centrada con bordes premium */
+      .cover .description { 
+        font-size: 18px; color: #9ca3af; max-width: 650px; 
+        border-top: 2px solid var(--rojo-marca); 
+        border-bottom: 2px solid var(--rojo-marca); 
+        padding: 24px 0; margin: 0 auto; line-height: 1.6; 
+      }
+      
+      /* Pie de página centrado */
+      .cover-footer { position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; }
+      .cover-footer .label { font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+      .cover-footer .value { font-size: 18px; color: #ffffff; margin-bottom: 24px; font-weight: 600; }
       
       .section-title { font-size: ${titleSize}; color: var(--rojo-marca); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 24px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
       p { margin-top: 0; margin-bottom: 24px; text-align: left; color: #1f2937; font-weight: 400; }
@@ -131,7 +145,6 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
       .list-item { position: relative; padding-left: 32px; margin-bottom: 18px; color: #1f2937; }
       .premium-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: -6px; }
 
-      /* LA NUEVA CAJA PREMIUM DE CIERRE */
       .caja-premium-cierre {
         background-color: #0a0a0a;
         color: #ffffff;
@@ -141,13 +154,7 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
         border-radius: 12px;
         page-break-inside: avoid;
       }
-      .caja-premium-cierre .cierre-titulo {
-        color: var(--rojo-marca);
-        font-size: ${titleSize};
-        margin-top: 0;
-        margin-bottom: 20px;
-        text-transform: uppercase;
-      }
+      .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: ${titleSize}; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; }
       .caja-premium-cierre p { color: #e5e7eb; }
       .caja-premium-cierre strong { color: #ffffff; }
       .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 24px; }
@@ -157,7 +164,6 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
   </head>
   <body>
     <div class="cover">
-      <!-- RUTA DEL LOGO INYECTADA -->
       <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
       
       <h1>PROBLEMA CERO</h1>
@@ -217,4 +223,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Cierre Premium activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Portada Centrada activa en puerto ${PORT}`));
