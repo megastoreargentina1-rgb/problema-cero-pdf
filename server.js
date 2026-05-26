@@ -76,7 +76,7 @@ function procesarMarkdownAHTML(textoCrudo) {
 function generarPlantillaPDF(textoDiagnostico) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
   
-  // Tañamos masivos forzados para formato A4 físico
+  // Tamaños masivos forzados para formato A4 físico
   const fontSize = "19px"; 
   const lineHeight = "1.7";
   const titleSize = "26px";
