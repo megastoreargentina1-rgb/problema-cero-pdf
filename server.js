@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Tipografía Premium A4 Activa");
+  res.send("Motor PDF Problema Cero: Tipografía Masiva y Firma Activa");
 });
 
 function limpiarTexto(texto) {
@@ -76,14 +76,10 @@ function procesarMarkdownAHTML(textoCrudo) {
 function generarPlantillaPDF(textoDiagnostico) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
   
-  // Tamaños masivos forzados para formato A4 físico
-  const fontSize = "19px"; 
-  const lineHeight = "1.7";
-  const titleSize = "26px";
-  const bulletSize = "30px";
-  
-  const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
-  const fechaHoy = new Date().toLocaleDateString('es-AR', opcionesFecha);
+  // Tamaños masivos usando PT (Puntos de impresión fijos)
+  const bodyFont = "16pt"; 
+  const titleFont = "22pt";
+  const bulletSize = "24pt";
 
   return `
   <!DOCTYPE html>
@@ -100,8 +96,8 @@ function generarPlantillaPDF(textoDiagnostico) {
         font-family: 'Inter', sans-serif;
         color: var(--texto-principal);
         background-color: #ffffff;
-        line-height: ${lineHeight}; 
-        font-size: ${fontSize};
+        line-height: 1.7; 
+        font-size: ${bodyFont};
         margin: 0;
         padding: 0;
       }
@@ -116,34 +112,35 @@ function generarPlantillaPDF(textoDiagnostico) {
          position: relative;
       }
       .logo-portada { 
-         width: 280px; 
-         margin-bottom: 50px; 
+         width: 320px; 
+         margin-bottom: 60px; 
       }
-      .cover h1 { font-size: 54px; color: var(--rojo-marca); margin-top: 0; margin-bottom: 20px; letter-spacing: 3px; }
-      .cover .subtitle { font-size: 26px; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
-      .cover .private { font-size: 18px; font-weight: 700; margin-bottom: 50px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
+      .cover h1 { font-size: 40pt; color: var(--rojo-marca); margin-top: 0; margin-bottom: 15px; letter-spacing: 3px; }
+      .cover .subtitle { font-size: 20pt; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
+      .cover .private { font-size: 14pt; font-weight: 700; margin-bottom: 60px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
       
-      .cover .diag-title { font-size: 60px; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
+      .cover .diag-title { font-size: 45pt; font-weight: 700; margin-bottom: 50px; line-height: 1.1; }
       
       .cover .description { 
-        font-size: 22px; color: #9ca3af; max-width: 700px; 
+        font-size: 17pt; color: #9ca3af; max-width: 700px; 
         border-top: 2px solid var(--rojo-marca); 
         border-bottom: 2px solid var(--rojo-marca); 
-        padding: 24px 0; margin: 0 auto; line-height: 1.6;
-        margin-bottom: 150px; /* Margen de seguridad masivo para evitar superposición */
+        padding: 30px 0; margin: 0 auto; line-height: 1.6;
+        margin-bottom: 120px; /* Margen de seguridad masivo para que no choque con la firma */
       }
-      
+
+      /* Bloque de firma inyectado en el fondo */
       .cover-footer { position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; }
-      .cover-footer .label { font-size: 16px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
-      .cover-footer .value { font-size: 20px; color: #ffffff; margin-bottom: 24px; font-weight: 600; }
+      .cover-footer .label { font-size: 12pt; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+      .cover-footer .value { font-size: 16pt; color: #ffffff; font-weight: 600; }
       
-      .section-title { font-size: ${titleSize}; color: var(--rojo-marca); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 24px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
+      .section-title { font-size: ${titleFont}; color: var(--rojo-marca); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 24px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
       p { margin-top: 0; margin-bottom: 24px; text-align: left; color: #1f2937; font-weight: 400; }
       strong { font-weight: 700; color: #000000; }
       
       .premium-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 24px; }
       .list-item { position: relative; padding-left: 32px; margin-bottom: 18px; color: #1f2937; }
-      .premium-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: -6px; }
+      .premium-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: -4px; }
 
       .caja-premium-cierre {
         background-color: #0a0a0a;
@@ -154,12 +151,12 @@ function generarPlantillaPDF(textoDiagnostico) {
         border-radius: 12px;
         page-break-inside: avoid;
       }
-      .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: ${titleSize}; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; }
+      .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: ${titleFont}; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; }
       .caja-premium-cierre p { color: #e5e7eb; }
       .caja-premium-cierre strong { color: #ffffff; }
       .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 24px; }
       .cierre-list .list-item { position: relative; padding-left: 32px; margin-bottom: 18px; color: #e5e7eb; }
-      .cierre-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: -6px; }
+      .cierre-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: ${bulletSize}; position: absolute; left: 0; top: -4px; }
     </style>
   </head>
   <body>
@@ -177,8 +174,6 @@ function generarPlantillaPDF(textoDiagnostico) {
       </div>
 
       <div class="cover-footer">
-        <div class="label">Fecha de emisión</div>
-        <div class="value">${fechaHoy}</div>
         <div class="label">Dirección Estratégica</div>
         <div class="value">Lic. Hernán Mariano Waisman</div>
       </div>
@@ -222,4 +217,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Tipografía A4 activa en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Tipografía Masiva y Firma activa en puerto ${PORT}`));
