@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Portada Centrada Premium Activa");
+  res.send("Motor PDF Problema Cero: Tipografía Premium A4 Activa");
 });
 
 function limpiarTexto(texto) {
@@ -73,13 +73,14 @@ function procesarMarkdownAHTML(textoCrudo) {
   return htmlResult;
 }
 
-function generarPlantillaPDF(textoDiagnostico, isMobile) {
+function generarPlantillaPDF(textoDiagnostico) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
   
-  const fontSize = isMobile ? "24px" : "15px"; 
-  const lineHeight = isMobile ? "1.6" : "1.7";
-  const titleSize = isMobile ? "28px" : "18px";
-  const bulletSize = isMobile ? "32px" : "24px";
+  // Tañamos masivos forzados para formato A4 físico
+  const fontSize = "19px"; 
+  const lineHeight = "1.7";
+  const titleSize = "26px";
+  const bulletSize = "30px";
   
   const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
   const fechaHoy = new Date().toLocaleDateString('es-AR', opcionesFecha);
@@ -107,35 +108,34 @@ function generarPlantillaPDF(textoDiagnostico, isMobile) {
       .page-content { padding: 60px 80px; }
       .page-break { page-break-before: always; height: 1px; }
       
-      /* NUEVA PORTADA CENTRALIZADA Y NEGRO PURO */
       .cover {
          height: 100vh; display: flex; flex-direction: column; justify-content: center;
          align-items: center; text-align: center; 
-         background-color: #000000; /* Negro puro para fundir el logo */
+         background-color: #000000; 
          color: #ffffff; padding: 0 80px; box-sizing: border-box;
+         position: relative;
       }
       .logo-portada { 
-         width: 250px; /* Tamaño masivo y autoritario */
+         width: 280px; 
          margin-bottom: 50px; 
       }
-      .cover h1 { font-size: 46px; color: var(--rojo-marca); margin-top: 0; margin-bottom: 20px; letter-spacing: 3px; }
-      .cover .subtitle { font-size: 24px; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
-      .cover .private { font-size: 16px; font-weight: 700; margin-bottom: 50px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
+      .cover h1 { font-size: 54px; color: var(--rojo-marca); margin-top: 0; margin-bottom: 20px; letter-spacing: 3px; }
+      .cover .subtitle { font-size: 26px; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
+      .cover .private { font-size: 18px; font-weight: 700; margin-bottom: 50px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
       
-      .cover .diag-title { font-size: 52px; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
+      .cover .diag-title { font-size: 60px; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
       
-      /* Descripción centrada con bordes premium */
       .cover .description { 
-        font-size: 18px; color: #9ca3af; max-width: 650px; 
+        font-size: 22px; color: #9ca3af; max-width: 700px; 
         border-top: 2px solid var(--rojo-marca); 
         border-bottom: 2px solid var(--rojo-marca); 
-        padding: 24px 0; margin: 0 auto; line-height: 1.6; 
+        padding: 24px 0; margin: 0 auto; line-height: 1.6;
+        margin-bottom: 150px; /* Margen de seguridad masivo para evitar superposición */
       }
       
-      /* Pie de página centrado */
       .cover-footer { position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; }
-      .cover-footer .label { font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
-      .cover-footer .value { font-size: 18px; color: #ffffff; margin-bottom: 24px; font-weight: 600; }
+      .cover-footer .label { font-size: 16px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+      .cover-footer .value { font-size: 20px; color: #ffffff; margin-bottom: 24px; font-weight: 600; }
       
       .section-title { font-size: ${titleSize}; color: var(--rojo-marca); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 24px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
       p { margin-top: 0; margin-bottom: 24px; text-align: left; color: #1f2937; font-weight: 400; }
@@ -197,10 +197,9 @@ app.post("/*", async (req, res) => {
   let browser = null;
   try {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
-    const isMobile = req.body.isMobile === true;
     if (!diagnostico) return res.status(400).json({ error: "No se envió texto para el PDF" });
 
-    const htmlFinal = generarPlantillaPDF(diagnostico, isMobile);
+    const htmlFinal = generarPlantillaPDF(diagnostico);
 
     browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
     const page = await browser.newPage();
@@ -223,4 +222,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Portada Centrada activa en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero: Tipografía A4 activa en puerto ${PORT}`));
