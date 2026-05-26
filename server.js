@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Tipografía Calibrada y Centrada");
+  res.send("Motor PDF Problema Cero: Títulos Rojos y Sin Hojas en Blanco");
 });
 
 function limpiarTexto(texto) {
@@ -26,6 +26,15 @@ function procesarMarkdownAHTML(textoCrudo) {
     let limpia = linea.trim();
     if (!limpia) return;
 
+    // --- INYECCIÓN 1: Títulos de Consulta Original ---
+    if (limpia === "CONSULTA ORIGINAL:") {
+      htmlResult += `<h2 class="section-title">CASO PLANTEADO</h2>`;
+      return;
+    }
+    if (limpia === "DIAGNÓSTICO:") {
+      return; // Lo extirpamos para no ensuciar el diseño, ya que abajo viene "RESUMEN RÁPIDO"
+    }
+
     if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       htmlResult += '<div class="page-break"></div>';
@@ -35,8 +44,7 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
-      // ORDEN QUIRÚRGICA: Forzamos salto de página ANTES de la caja para que nunca se parta
-      htmlResult += `<div class="page-break"></div>`;
+      // --- INYECCIÓN 2: Extirpamos el salto de página forzado que creaba hojas en blanco ---
       htmlResult += `<div class="caja-premium-cierre">`;
       htmlResult += `<h2 class="cierre-titulo">${limpia}</h2>`;
       return;
@@ -96,7 +104,6 @@ function generarPlantillaPDF(textoDiagnostico) {
         margin: 0;
         padding: 0;
       }
-      /* Letra calibrada: "Una gotita menos" (24px) para recuperar la estética */
       p, li, .list-item { 
         font-size: 24px !important; 
         line-height: 1.6 !important; 
@@ -114,11 +121,9 @@ function generarPlantillaPDF(textoDiagnostico) {
         padding-bottom: 12px; 
       }
 
-      /* Reducción del hueco gigante en la parte superior */
       .page-content { padding: 40px 90px; }
       .page-break { page-break-before: always; height: 1px; }
       
-      /* Portada reajustada para que no empuje el logo hacia afuera */
       .cover {
          height: 100vh; display: flex; flex-direction: column; justify-content: center;
          align-items: center; text-align: center; 
@@ -138,7 +143,7 @@ function generarPlantillaPDF(textoDiagnostico) {
         border-top: 2px solid var(--rojo-marca); 
         border-bottom: 2px solid var(--rojo-marca); 
         padding: 30px 0; margin: 0 auto; line-height: 1.6;
-        margin-bottom: 110px; /* Ajustado para no aplastar tu firma */
+        margin-bottom: 110px;
       }
 
       .cover-footer { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; }
@@ -155,9 +160,9 @@ function generarPlantillaPDF(textoDiagnostico) {
         color: #ffffff;
         border-left: 8px solid var(--rojo-marca);
         padding: 50px;
-        margin-top: 0px;
+        margin-top: 20px;
         border-radius: 16px;
-        page-break-inside: avoid;
+        page-break-inside: avoid; /* Regla elástica: fluye natural sin forzar hojas vacías */
       }
       .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: 32px !important; margin-top: 0; margin-bottom: 25px; text-transform: uppercase; }
       .caja-premium-cierre p { color: #e5e7eb; font-size: 24px !important; }
@@ -225,4 +230,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Tipografía Calibrada en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Títulos Rojos y Sin Hojas Blancas en puerto ${PORT}`));
