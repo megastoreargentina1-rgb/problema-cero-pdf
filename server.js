@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Títulos Rojos y Sin Hojas en Blanco");
+  res.send("Motor PDF Problema Cero: Títulos Rojos y CTA Naranja");
 });
 
 function limpiarTexto(texto) {
@@ -26,13 +26,12 @@ function procesarMarkdownAHTML(textoCrudo) {
     let limpia = linea.trim();
     if (!limpia) return;
 
-    // --- INYECCIÓN 1: Títulos de Consulta Original ---
     if (limpia === "CONSULTA ORIGINAL:") {
       htmlResult += `<h2 class="section-title">CASO PLANTEADO</h2>`;
       return;
     }
     if (limpia === "DIAGNÓSTICO:") {
-      return; // Lo extirpamos para no ensuciar el diseño, ya que abajo viene "RESUMEN RÁPIDO"
+      return; 
     }
 
     if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
@@ -44,7 +43,6 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
-      // --- INYECCIÓN 2: Extirpamos el salto de página forzado que creaba hojas en blanco ---
       htmlResult += `<div class="caja-premium-cierre">`;
       htmlResult += `<h2 class="cierre-titulo">${limpia}</h2>`;
       return;
@@ -74,7 +72,13 @@ function procesarMarkdownAHTML(textoCrudo) {
 
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      htmlResult += `<p>${parrafo}</p>`;
+      
+      // INYECCIÓN VISUAL DEL CTA NARANJA
+      if (limpia.includes("TU PRÓXIMO PASO:")) {
+        htmlResult += `<div class="caja-cta-naranja"><p>${parrafo}</p></div>`;
+      } else {
+        htmlResult += `<p>${parrafo}</p>`;
+      }
     }
   });
 
@@ -95,6 +99,7 @@ function generarPlantillaPDF(textoDiagnostico) {
     <style>
       :root {
         --rojo-marca: #dc2626;
+        --naranja-cta: #f97316;
         --texto-principal: #111827;
       }
       body {
@@ -158,15 +163,34 @@ function generarPlantillaPDF(textoDiagnostico) {
       .caja-premium-cierre {
         background-color: #0a0a0a;
         color: #ffffff;
-        border-left: 8px solid var(--rojo-marca);
+        border: 3px solid var(--rojo-marca);
         padding: 50px;
         margin-top: 20px;
         border-radius: 16px;
-        page-break-inside: avoid; /* Regla elástica: fluye natural sin forzar hojas vacías */
+        page-break-inside: avoid; 
       }
-      .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: 32px !important; margin-top: 0; margin-bottom: 25px; text-transform: uppercase; }
+      .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: 32px !important; margin-top: 0; margin-bottom: 25px; text-transform: uppercase; text-align: center; }
       .caja-premium-cierre p { color: #e5e7eb; font-size: 24px !important; }
       .caja-premium-cierre strong { color: #ffffff; }
+      
+      /* ESTILOS DEL BLOQUE CTA NARANJA */
+      .caja-cta-naranja {
+        background-color: #2a1005; 
+        border: 2px solid var(--naranja-cta);
+        padding: 22px;
+        border-radius: 12px;
+        margin-top: 35px;
+        text-align: center;
+      }
+      .caja-cta-naranja p {
+        color: var(--naranja-cta) !important;
+        font-size: 26px !important;
+        margin: 0 !important;
+      }
+      .caja-cta-naranja strong {
+        color: #ffffff !important;
+      }
+
       .cierre-list { list-style: none; padding-left: 0; margin-top: 20px; margin-bottom: 30px; }
       .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 24px; color: #e5e7eb; }
       .cierre-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
@@ -230,4 +254,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Títulos Rojos y Sin Hojas Blancas en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Títulos Rojos y CTA Naranja en puerto ${PORT}`));
