@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Arquitectura High-Ticket Minimalista");
+  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Tipografía 24px)");
 });
 
 function limpiarTexto(texto) {
@@ -28,7 +28,10 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (!limpia) return;
 
     if (limpia === "CONSULTA ORIGINAL:") {
-      htmlResult += `<h2 class="section-title">CASO PLANTEADO</h2>`;
+      htmlResult += `<div class="editorial-header">
+                       <div class="kicker">Análisis de Situación</div>
+                       <h2 class="editorial-title">CASO PLANTEADO</h2>
+                     </div>`;
       return;
     }
     if (limpia === "DIAGNÓSTICO:" || limpia === "DIAGNÓSTICO INICIAL:" || limpia === "Aquí tienes el análisis de Problema Cero:") {
@@ -40,7 +43,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       return; 
     }
 
-    // CARÁTULA SECUNDARIA: Ajustada para que no se corte jamás
+    // CARÁTULA SECUNDARIA (DOCUMENTO EJECUTIVO) 
     if (limpia === "ANÁLISIS COMPLETO:") {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
@@ -51,31 +54,26 @@ function procesarMarkdownAHTML(textoCrudo) {
       <div class="cover-interna">
         <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
         
-        <h1 style="font-size: 45px !important; margin-bottom: 10px;">PROBLEMA CERO</h1>
-        <div class="subtitle" style="font-size: 22px !important; margin-bottom: 30px;">Interconsulta estratégica empresarial</div>
+        <h1 style="font-size: 42px !important; margin-bottom: 10px; font-weight: 700; letter-spacing: 2px;">PROBLEMA CERO</h1>
+        <div class="subtitle" style="font-size: 22px !important; margin-bottom: 50px; font-weight: 300; letter-spacing: 1px;">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
         
-        <div class="diag-title" style="color: #ffffff; font-size: 55px !important; margin-bottom: 20px;">Mapa de<br><span style="color: var(--rojo-marca);">Ejecución</span></div>
-        <div class="private" style="font-size: 16px !important; margin-bottom: 30px; letter-spacing: 3px;">DOCUMENTO EJECUTIVO</div>
+        <div class="diag-title" style="color: #ffffff; font-size: 65px !important; margin-bottom: 20px; font-weight: 300;">Mapa de <span style="font-weight: 700; color: var(--rojo-marca);">Ejecución</span></div>
+        <div class="private" style="font-size: 16px !important; margin-bottom: 40px; letter-spacing: 4px; color: #9ca3af;">DOCUMENTO EJECUTIVO</div>
         
-        <div class="description" style="font-size: 20px !important; margin-bottom: 40px; border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 20px 0;">
+        <div class="description" style="font-size: 24px !important; font-weight: 300; margin-bottom: 60px; max-width: 750px; color: #d1d5db; line-height: 1.6;">
           Un plan de acción quirúrgico diseñado para corregir la raíz del problema, ordenar prioridades absolutas y escalar el negocio en los próximos 30 días.
         </div>
 
-        <div style="background-color: #0a0a0a; border-left: 4px solid var(--rojo-marca); padding: 20px 30px; max-width: 800px; margin: 0 auto; text-align: left; border-radius: 0 8px 8px 0; border: 1px solid #1f2937; border-left: 4px solid var(--rojo-marca);">
-           <div style="color: var(--naranja-cta); font-size: 16px !important; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase;">Línea Abierta Activada</div>
-           <div style="color: #d1d5db; font-size: 18px !important; line-height: 1.5; margin: 0;">La claridad sin ejecución es solo entretenimiento. Si durante estos 30 días necesitás calibrar la estrategia o destrabar un paso específico, tu canal para solicitar una interconsulta 1 a 1 sigue activo.</div>
-        </div>
-
-        <div class="cover-footer">
-          <div class="label" style="font-size: 14px !important;">Dirección Estratégica</div>
-          <div class="value" style="font-size: 20px !important;">Lic. Hernán Mariano Waisman</div>
+        <div style="max-width: 750px; margin: 0 auto; text-align: left; padding-left: 25px; border-left: 3px solid var(--rojo-marca);">
+           <div style="color: #ffffff; font-size: 16px !important; font-weight: 600; margin-bottom: 10px; letter-spacing: 2px; text-transform: uppercase;">Línea Abierta Activada</div>
+           <div style="color: #9ca3af; font-size: 22px !important; line-height: 1.5; margin: 0; font-weight: 300;">La claridad sin ejecución es solo entretenimiento. Si durante estos 30 días necesitás calibrar la estrategia o destrabar un paso específico, tu canal para solicitar una interconsulta 1 a 1 sigue activo en la plataforma.</div>
         </div>
       </div>
       `;
       return;
     }
 
-    // CAJA NEGRA DEL CTA (El puente entre diagnóstico y plan)
+    // CAJA DEL CTA
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
@@ -86,39 +84,41 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // TÍTULOS DEL PLAN DE ACCIÓN: Estilo Corporate Elegante (Gris y Rojo)
-    const regexPlanAccion = /^(?:🧭|🎯|🛑|🔧|📅|📆|📌|💬|📊|⚠️|🧠)?\s*(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA.*|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO)/i;
-    const matchAccion = limpia.match(regexPlanAccion);
+    // TÍTULOS DEL PLAN DE ACCIÓN Y DIAGNÓSTICO
+    const regexTitulos = /^(?:🧭|🎯|🛑|🔧|📅|📆|📌|💬|📊|⚠️|🧠|⚡|🔴|🚀|💰|🔥)?\s*(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA.*|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE)/i;
+    const matchTitulo = limpia.match(regexTitulos);
 
-    if (matchAccion) {
+    if (matchTitulo) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      const tituloLimpio = matchAccion[1].toUpperCase();
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += `<div class="titulo-ejecutivo-wrapper"><h2 class="titulo-ejecutivo">${tituloLimpio}</h2></div>`;
-      return;
-    }
-
-    // TÍTULOS DEL DIAGNÓSTICO
-    const matchDiag = limpia.match(/^(?:⚡|🔴|🧠|⚠️|🚀|💰|🔥)\s*(.*)$/);
-    if (matchDiag) {
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      const tituloTexto = matchDiag[1].toUpperCase();
-      if (!tituloTexto.includes("RESUMEN RÁPIDO")) {
+      const tituloLimpio = matchTitulo[1].toUpperCase();
+      
+      if (!tituloLimpio.includes("RESUMEN RÁPIDO")) {
           htmlResult += '<div class="page-break"></div>';
       }
-      htmlResult += `<h2 class="section-title">${matchDiag[1]}</h2>`;
+      
+      let kickerText = "Lectura Estratégica";
+      if (["MAPA EJECUTIVO", "PRIORIDAD ABSOLUTA", "QUÉ DEJAR DE HACER YA", "QUÉ CORREGIR PRIMERO", "PLAN DE ACCIÓN - PRÓXIMOS 7 DÍAS", "PLAN DE ACCIÓN - PRÓXIMOS 30 DÍAS", "SI / ENTONCES"].includes(tituloLimpio)) {
+          kickerText = "Arquitectura de Decisiones";
+      } else if (["CONTENIDO QUE DEBERÍA CREAR", "MENSAJES DE VENTA LISTOS PARA USAR", "MÉTRICA QUE DEBERÍA MIRAR"].includes(tituloLimpio)) {
+          kickerText = "Ejecución Comercial";
+      }
+
+      htmlResult += `<div class="editorial-header">
+                       <div class="kicker">${kickerText}</div>
+                       <h2 class="editorial-title">${tituloLimpio}</h2>
+                     </div>`;
       return;
     }
 
     if (limpia.includes("TU PRÓXIMO PASO:")) {
-      htmlResult += `<div class="caja-cta-naranja"><p class="cta-titulo">TU PRÓXIMO PASO:</p>`;
+      htmlResult += `<div class="caja-cta-blanca"><p class="cta-titulo">TU PRÓXIMO PASO:</p>`;
       enCajaNaranja = true;
       return;
     }
 
     if (limpia.startsWith('- ') || limpia.startsWith('* ')) {
       if (!enLista) { 
-        htmlResult += (enCajaCierre && !enCajaNaranja) ? '<ul class="cierre-list">' : '<ul class="ejecutivo-list">'; 
+        htmlResult += (enCajaCierre && !enCajaNaranja) ? '<ul class="cierre-list">' : '<ul class="editorial-list">'; 
         enLista = true; 
       }
       let itemTexto = limpia.substring(2);
@@ -137,7 +137,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       } else if (enCajaCierre) {
          htmlResult += `<p style="color: #e5e7eb;">${parrafo}</p>`;
       } else {
-         htmlResult += `<p class="texto-ejecutivo">${parrafo}</p>`;
+         htmlResult += `<p class="texto-editorial">${parrafo}</p>`;
       }
     }
   });
@@ -161,9 +161,8 @@ function generarPlantillaPDF(textoDiagnostico) {
     <style>
       :root {
         --rojo-marca: #dc2626;
-        --naranja-cta: #f97316;
-        --texto-principal: #1f2937;
-        --gris-plata: #f8fafc;
+        --texto-principal: #171717;
+        --texto-secundario: #525252;
       }
       body {
         font-family: 'Inter', sans-serif;
@@ -172,90 +171,109 @@ function generarPlantillaPDF(textoDiagnostico) {
         margin: 0;
         padding: 0;
       }
-      .page-content { padding: 40px 90px; }
+      .page-content { padding: 50px 90px; }
       .page-break { page-break-before: always; height: 1px; }
       
-      /* CARÁTULAS NEGRAS (El único elemento oscuro) */
+      /* CARÁTULAS NEGRAS */
       .cover {
          height: 100vh; display: flex; flex-direction: column; justify-content: center;
          align-items: center; text-align: center; 
-         background-color: #000000; color: #ffffff; padding: 0 80px; box-sizing: border-box; position: relative;
+         background-color: #0a0a0a; color: #ffffff; padding: 0 80px; box-sizing: border-box; position: relative;
       }
       .cover-interna {
          height: 100vh; display: flex; flex-direction: column; justify-content: center;
          align-items: center; text-align: center; 
-         background-color: #000000; color: #ffffff; padding: 40px 80px; box-sizing: border-box; position: relative;
+         background-color: #0a0a0a; color: #ffffff; padding: 40px 80px; box-sizing: border-box; position: relative;
          page-break-inside: avoid;
       }
-      .logo-portada { width: 320px; margin-bottom: 40px; margin-top: 20px; }
-      .cover h1 { font-size: 55px !important; color: var(--rojo-marca); margin-top: 0; margin-bottom: 15px; letter-spacing: 3px; }
-      .cover .subtitle { font-size: 28px !important; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
-      .cover .private { font-size: 20px !important; font-weight: 700; margin-bottom: 50px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
-      .cover .diag-title { font-size: 65px !important; font-weight: 700; margin-bottom: 50px; line-height: 1.1; }
+      .logo-portada { width: 280px; margin-bottom: 50px; margin-top: 20px; }
+      .cover h1 { font-size: 44px !important; color: var(--rojo-marca); margin-top: 0; margin-bottom: 15px; letter-spacing: 4px; font-weight: 700; }
+      .cover .subtitle { font-size: 24px !important; font-weight: 300; margin-bottom: 10px; color: #d1d5db; letter-spacing: 1px;}
+      .cover .private { font-size: 16px !important; font-weight: 600; margin-bottom: 60px; color: #6b7280; letter-spacing: 5px; text-transform: uppercase; }
+      .cover .diag-title { font-size: 68px !important; font-weight: 300; margin-bottom: 60px; line-height: 1.1; }
       .cover .description { 
-        font-size: 24px !important; color: #9ca3af; max-width: 800px; 
-        border-top: 2px solid var(--rojo-marca); border-bottom: 2px solid var(--rojo-marca); 
-        padding: 30px 0; margin: 0 auto; line-height: 1.6; margin-bottom: 110px;
+        font-size: 24px !important; color: #9ca3af; max-width: 750px; 
+        border-top: 1px solid #334155; border-bottom: 1px solid #334155; 
+        padding: 30px 0; margin: 0 auto; line-height: 1.6; margin-bottom: 110px; font-weight: 300;
       }
       .cover-footer { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; }
-      .cover-footer .label { font-size: 18px !important; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-      .cover-footer .value { font-size: 24px !important; color: #ffffff; font-weight: 600; }
+      .cover-footer .label { font-size: 14px !important; color: #6b7280; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px; font-weight: 600; }
+      .cover-footer .value { font-size: 22px !important; color: #ffffff; font-weight: 400; letter-spacing: 1px; }
 
-      /* TÍTULOS Y TEXTOS CORPORATIVOS (Elegancia minimalista) */
-      .section-title { 
-        font-size: 30px !important; color: var(--rojo-marca); text-transform: uppercase; 
-        letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 24px; 
-        border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; 
+      /* ESTILOS EDITORIALES HIGH-TICKET */
+      .editorial-header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e5e7eb;
       }
-      .titulo-ejecutivo-wrapper {
-        background-color: var(--gris-plata);
-        border-left: 6px solid var(--rojo-marca);
-        padding: 18px 25px;
-        margin-bottom: 35px;
-        border-bottom: 1px solid #e2e8f0;
+      .kicker {
+        font-size: 14px !important;
+        color: var(--rojo-marca);
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-weight: 700;
+        margin-bottom: 10px;
       }
-      .titulo-ejecutivo {
-        color: #0f172a;
-        font-size: 26px !important;
+      .editorial-title {
+        color: var(--texto-principal);
+        font-size: 34px !important;
         margin: 0;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        font-weight: 700;
-      }
-      
-      .texto-ejecutivo, p {
-        font-size: 22px !important;
-        line-height: 1.65 !important;
-        color: #334155;
+        letter-spacing: 1px;
         font-weight: 300;
       }
-      strong { font-weight: 600; color: #0f172a; }
+      
+      .texto-editorial, p {
+        font-size: 24px !important;
+        line-height: 1.6 !important;
+        color: var(--texto-secundario);
+        font-weight: 300;
+        margin-bottom: 28px;
+        max-width: 95%;
+      }
+      strong { font-weight: 600; color: #000000; }
 
-      .ejecutivo-list { list-style: none; padding-left: 0; margin-top: 20px; margin-bottom: 30px; }
-      .list-item { position: relative; padding-left: 45px; margin-bottom: 20px; font-size: 22px !important; line-height: 1.6 !important; color: #334155; font-weight: 300; }
-      .ejecutivo-list .list-item::before { content: "—"; color: var(--rojo-marca); font-weight: bold; font-size: 24px; position: absolute; left: 0; top: 0; }
+      .editorial-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 40px; }
+      .list-item { 
+        position: relative; 
+        padding-left: 45px; 
+        margin-bottom: 24px; 
+        font-size: 24px !important; 
+        line-height: 1.6 !important; 
+        color: var(--texto-secundario); 
+        font-weight: 300; 
+        max-width: 95%;
+      }
+      .editorial-list .list-item::before { 
+        content: "—"; 
+        color: var(--rojo-marca); 
+        font-weight: 400; 
+        font-size: 24px; 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+      }
 
-      /* CAJA CTA BLINDADA (El puente negro de conversión) */
+      /* CAJA CTA CIERRE DIAGNÓSTICO */
       .contenedor-cierre { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 75vh; }
       .caja-premium-cierre {
-        background-color: #0a0a0a; color: #ffffff; border: 3px solid var(--rojo-marca);
-        padding: 35px; margin: 0 auto; border-radius: 12px; display: block; width: 100%; box-sizing: border-box;
+        background-color: #0a0a0a; color: #ffffff; border: 1px solid #334155;
+        padding: 50px; margin: 0 auto; display: block; width: 100%; box-sizing: border-box; text-align: center;
       }
       .caja-premium-cierre .cierre-titulo { 
-        color: var(--rojo-marca); font-size: 24px !important; margin-top: 0; margin-bottom: 25px; 
-        text-transform: uppercase; text-align: center; border-top: 1px solid var(--rojo-marca);
-        border-bottom: 1px solid var(--rojo-marca); padding: 18px 0; letter-spacing: 1px;
+        color: #ffffff; font-size: 26px !important; margin-top: 0; margin-bottom: 30px; 
+        text-transform: uppercase; border-bottom: 1px solid var(--rojo-marca); padding-bottom: 20px; letter-spacing: 2px; font-weight: 300;
       }
-      .caja-cta-naranja {
-        background-color: #2a1005; border: 2px solid var(--naranja-cta); padding: 16px;
-        border-radius: 8px; margin-top: 25px; text-align: center;
+      .caja-cta-blanca {
+        background-color: #ffffff; border: 1px solid #e5e7eb; padding: 30px;
+        margin-top: 35px; text-align: center;
       }
-      .cta-titulo { color: var(--naranja-cta) !important; font-size: 22px !important; margin: 0 0 10px 0 !important; font-weight: bold; }
-      .cta-texto { color: #ffffff !important; font-size: 20px !important; margin: 0 !important; }
+      .cta-titulo { color: var(--rojo-marca) !important; font-size: 16px !important; margin: 0 0 10px 0 !important; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+      .cta-texto { color: var(--texto-principal) !important; font-size: 24px !important; margin: 0 !important; font-weight: 400; }
 
       .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 20px; }
-      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #e5e7eb; }
-      .cierre-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
+      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #9ca3af; font-weight: 300; }
+      .cierre-list .list-item::before { content: "—"; color: var(--rojo-marca); position: absolute; left: 0; top: 0; }
     </style>
   </head>
   <body>
@@ -263,8 +281,8 @@ function generarPlantillaPDF(textoDiagnostico) {
       <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
       
       <h1>PROBLEMA CERO</h1>
-      <div class="subtitle">Interconsulta estratégica empresarial</div>
-      <div class="private">Informe Privado</div>
+      <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
+      <div class="private">INFORME PRIVADO</div>
       
       <div class="diag-title">Diagnóstico<br>estratégico</div>
       
@@ -302,10 +320,10 @@ app.post("/*", async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: "A4", 
       printBackground: true, 
-      margin: { top: "40px", bottom: "80px", left: "0px", right: "0px" },
+      margin: { top: "50px", bottom: "80px", left: "0px", right: "0px" },
       displayHeaderFooter: true, 
       headerTemplate: "<div></div>",
-      footerTemplate: `<div style="font-size: 11px; width: 100%; color: #6b7280; padding: 0 90px; display: flex; justify-content: space-between; font-family: Arial, sans-serif; -webkit-print-color-adjust: exact;"><span>Problema Cero Dirección Estratégica</span><span>Página <span class="pageNumber"></span></span></div>`
+      footerTemplate: `<div style="font-size: 12px; width: 100%; color: #9ca3af; padding: 0 90px; display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; letter-spacing: 1px; -webkit-print-color-adjust: exact;"><span>PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
     });
     
     res.set({ "Content-Type": "application/pdf", "Content-Disposition": "attachment; filename=Diagnostico_ProblemaCero.pdf", "Content-Length": pdfBuffer.length });
@@ -319,4 +337,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Arquitectura Minimalista en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Tipografía 24px en puerto ${PORT}`));
