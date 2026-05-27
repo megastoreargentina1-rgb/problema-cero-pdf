@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Caja Blindada, CTA Naranja y Título Elegante");
+  res.send("Motor PDF Problema Cero: Caja Negra Centrada en Última Página");
 });
 
 function limpiarTexto(texto) {
@@ -40,10 +40,11 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // INTERVENCIÓN QUIRÚRGICA: Extirpamos emojis y aplicamos el título limpio
+    // INTERVENCIÓN QUIRÚRGICA: Forzamos salto de página y centrado vertical (padding-top)
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
+      htmlResult += `<div style="page-break-before: always; padding-top: 12vh;">`;
       htmlResult += `<div class="caja-premium-cierre">`;
       htmlResult += `<h2 class="cierre-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>`;
       return;
@@ -74,7 +75,6 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       
-      // INYECCIÓN VISUAL DEL CTA NARANJA
       if (limpia.includes("TU PRÓXIMO PASO:")) {
         htmlResult += `<div class="caja-cta-naranja"><p>${parrafo}</p></div>`;
       } else {
@@ -84,7 +84,9 @@ function procesarMarkdownAHTML(textoCrudo) {
   });
 
   if (enLista) htmlResult += '</ul>';
-  if (enCajaCierre) htmlResult += '</div>';
+  if (enCajaCierre) {
+      htmlResult += '</div></div>'; // Cerramos la caja y el contenedor de centrado
+  }
   return htmlResult;
 }
 
@@ -161,22 +163,19 @@ function generarPlantillaPDF(textoDiagnostico) {
       .list-item { position: relative; padding-left: 45px; margin-bottom: 24px; }
       .premium-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
 
-      /* CAJA BLINDADA */
+      /* CAJA BLINDADA Y CENTRADA */
       .caja-premium-cierre {
         background-color: #0a0a0a;
         color: #ffffff;
         border: 3px solid var(--rojo-marca);
         padding: 35px;
-        margin-top: 10px;
+        margin: 0 auto;
         border-radius: 16px;
-        page-break-inside: avoid; 
-        break-inside: avoid;
-        display: inline-block; 
+        display: block; 
         width: 100%;
         box-sizing: border-box;
       }
 
-      /* TÍTULO ELEGANTE SIN EMOJIS ROTOS */
       .caja-premium-cierre .cierre-titulo { 
         color: var(--rojo-marca); 
         font-size: 26px !important; 
@@ -193,7 +192,6 @@ function generarPlantillaPDF(textoDiagnostico) {
       .caja-premium-cierre p { color: #e5e7eb; font-size: 22px !important; }
       .caja-premium-cierre strong { color: #ffffff; }
       
-      /* ESTILOS DEL BLOQUE CTA NARANJA COMPRIMIDO */
       .caja-cta-naranja {
         background-color: #2a1005; 
         border: 2px solid var(--naranja-cta);
@@ -274,4 +272,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Caja Blindada, CTA Naranja y Título Elegante en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Caja Negra Centrada en puerto ${PORT}`));
