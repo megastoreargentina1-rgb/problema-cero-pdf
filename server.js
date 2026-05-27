@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Doble Carátula Premium y Línea Abierta");
+  res.send("Motor PDF Problema Cero: Saltos 1 a 1 y Pies de Página Restaurados");
 });
 
 function limpiarTexto(texto) {
@@ -35,6 +35,13 @@ function procesarMarkdownAHTML(textoCrudo) {
       return; 
     }
 
+    // IGNORAR SEPARADORES PARA EVITAR HOJAS BLANCAS DOBLES
+    if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      return; 
+    }
+
+    // CARÁTULA DEL ANÁLISIS COMPLETO
     if (limpia === "ANÁLISIS COMPLETO:") {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
@@ -70,11 +77,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      return; 
-    }
-
+    // CAJA NEGRA DEL DIAGNÓSTICO
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
@@ -85,6 +88,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
+    // TÍTULOS DEL PLAN DE ACCIÓN -> FUERZAN SALTO DE PÁGINA
     const regexPlanAccion = /^(?:🧭|🎯|🛑|🔧|📅|📆|📌|💬|📊|⚠️|🧠)?\s*(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA.*|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO)/i;
     const matchAccion = limpia.match(regexPlanAccion);
 
@@ -96,19 +100,29 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
+    // TÍTULOS DEL DIAGNÓSTICO INICIAL -> FUERZAN SALTO DE PÁGINA (EXCEPTO EL RESUMEN RÁPIDO)
     const matchDiag = limpia.match(/^(?:⚡|🔴|🧠|⚠️|🚀|💰|🔥)\s*(.*)$/);
     if (matchDiag) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      const tituloTexto = matchDiag[1].toUpperCase();
+      
+      // Que "Resumen Rápido" quede en la misma página que "Caso Planteado"
+      if (!tituloTexto.includes("RESUMEN RÁPIDO")) {
+          htmlResult += '<div class="page-break"></div>';
+      }
+      
       htmlResult += `<h2 class="section-title">${matchDiag[1]}</h2>`;
       return;
     }
 
+    // BOTÓN CTA
     if (limpia.includes("TU PRÓXIMO PASO:")) {
       htmlResult += `<div class="caja-cta-naranja"><p class="cta-titulo">TU PRÓXIMO PASO:</p>`;
       enCajaNaranja = true;
       return;
     }
 
+    // LISTAS Y VIÑETAS
     if (limpia.startsWith('- ') || limpia.startsWith('* ')) {
       if (!enLista) { 
         htmlResult += (enCajaCierre && !enCajaNaranja) ? '<ul class="cierre-list">' : '<ul class="premium-list">'; 
@@ -123,6 +137,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       enLista = false;
     }
 
+    // PÁRRAFOS
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       if (enCajaNaranja) {
@@ -290,9 +305,12 @@ app.post("/*", async (req, res) => {
     await page.setContent(htmlFinal, { waitUntil: "networkidle0" });
 
     const pdfBuffer = await page.pdf({
-      format: "A4", printBackground: true, margin: { top: "40px", bottom: "60px", left: "0px", right: "0px" },
-      displayHeaderFooter: true, headerTemplate: "<div></div>",
-      footerTemplate: `<div style="width: 100%; font-size: 14px; padding: 0 90px; display: flex; justify-content: space-between; color: #6b7280; font-family: 'Helvetica Neue', sans-serif;"><span>Problema Cero Dirección Estratégica</span><span>Página <span class="pageNumber"></span></span></div>`
+      format: "A4", 
+      printBackground: true, 
+      margin: { top: "40px", bottom: "80px", left: "0px", right: "0px" },
+      displayHeaderFooter: true, 
+      headerTemplate: "<div></div>",
+      footerTemplate: `<div style="font-size: 11px; width: 100%; color: #6b7280; padding: 0 90px; display: flex; justify-content: space-between; font-family: Arial, sans-serif; -webkit-print-color-adjust: exact;"><span>Problema Cero Dirección Estratégica</span><span>Página <span class="pageNumber"></span></span></div>`
     });
     
     res.set({ "Content-Type": "application/pdf", "Content-Disposition": "attachment; filename=Diagnostico_ProblemaCero.pdf", "Content-Length": pdfBuffer.length });
@@ -306,4 +324,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Doble Carátula y Línea Abierta en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Arreglado en puerto ${PORT}`));
