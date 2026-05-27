@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Saltos 1 a 1 y Pies de Página Restaurados");
+  res.send("Motor PDF Problema Cero: Slides Negras y Carátula Sellada");
 });
 
 function limpiarTexto(texto) {
@@ -22,6 +22,7 @@ function procesarMarkdownAHTML(textoCrudo) {
   let enLista = false;
   let enCajaCierre = false;
   let enCajaNaranja = false;
+  let enSlide = false;
 
   lineas.forEach(linea => {
     let limpia = linea.trim();
@@ -35,21 +36,22 @@ function procesarMarkdownAHTML(textoCrudo) {
       return; 
     }
 
-    // IGNORAR SEPARADORES PARA EVITAR HOJAS BLANCAS DOBLES
-    if (limpia.includes("━━━━━━━━━━━━━━━━━━━━")) {
+    // Ignoramos separadores vacíos para no romper la maquetación
+    if (limpia.includes("━━━━━━━━━━━━━━━━━━━━") || limpia === "•") {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       return; 
     }
 
-    // CARÁTULA DEL ANÁLISIS COMPLETO
+    // CARÁTULA SECUNDARIA
     if (limpia === "ANÁLISIS COMPLETO:") {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
+      if (enSlide) { htmlResult += '</div>'; enSlide = false; }
       
       htmlResult += '<div class="page-break"></div>';
       htmlResult += `
-      <div class="cover">
+      <div class="cover-interna">
         <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
         
         <h1>PROBLEMA CERO</h1>
@@ -64,7 +66,7 @@ function procesarMarkdownAHTML(textoCrudo) {
 
         <div style="background-color: #0a0a0a; border-left: 6px solid var(--rojo-marca); padding: 25px 35px; max-width: 800px; margin: 0 auto; text-align: left; border-radius: 0 12px 12px 0;">
            <div style="color: var(--naranja-cta); font-size: 20px !important; font-weight: 700; margin-bottom: 12px; letter-spacing: 1px;">LÍNEA ABIERTA</div>
-           <div style="color: #d1d5db; font-size: 22px !important; line-height: 1.6; margin: 0;">La claridad sin ejecución es solo entretenimiento. Si durante estos 30 días necesitás calibrar la estrategia o destrabar un paso específico, tu canal para solicitar una interconsulta 1 a 1 sigue activo.</div>
+           <div style="color: #d1d5db; font-size: 20px !important; line-height: 1.6; margin: 0;">La claridad sin ejecución es solo entretenimiento. Si durante estos 30 días necesitás calibrar la estrategia o destrabar un paso específico, tu canal para solicitar una interconsulta 1 a 1 sigue activo.</div>
         </div>
 
         <div class="cover-footer">
@@ -73,11 +75,9 @@ function procesarMarkdownAHTML(textoCrudo) {
         </div>
       </div>
       `;
-      htmlResult += '<div class="page-break"></div>';
       return;
     }
 
-    // CAJA NEGRA DEL DIAGNÓSTICO
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
@@ -88,44 +88,47 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // TÍTULOS DEL PLAN DE ACCIÓN -> FUERZAN SALTO DE PÁGINA
+    // APERTURA DE LAS PLACAS NEGRAS DEL PLAN DE ACCIÓN
     const regexPlanAccion = /^(?:🧭|🎯|🛑|🔧|📅|📆|📌|💬|📊|⚠️|🧠)?\s*(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA.*|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO)/i;
     const matchAccion = limpia.match(regexPlanAccion);
 
     if (matchAccion) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      if (enSlide) { htmlResult += '</div>'; } // Cierra la caja anterior
+      
+      enSlide = true;
       const tituloLimpio = matchAccion[1].toUpperCase();
       htmlResult += '<div class="page-break"></div>';
-      htmlResult += `<div class="titulo-accion-wrapper"><h2 class="titulo-accion">${tituloLimpio}</h2></div>`;
+      htmlResult += `<div class="accion-slide"><h2 class="titulo-accion">${tituloLimpio}</h2>`;
       return;
     }
 
-    // TÍTULOS DEL DIAGNÓSTICO INICIAL -> FUERZAN SALTO DE PÁGINA (EXCEPTO EL RESUMEN RÁPIDO)
     const matchDiag = limpia.match(/^(?:⚡|🔴|🧠|⚠️|🚀|💰|🔥)\s*(.*)$/);
     if (matchDiag) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       const tituloTexto = matchDiag[1].toUpperCase();
-      
-      // Que "Resumen Rápido" quede en la misma página que "Caso Planteado"
       if (!tituloTexto.includes("RESUMEN RÁPIDO")) {
           htmlResult += '<div class="page-break"></div>';
       }
-      
       htmlResult += `<h2 class="section-title">${matchDiag[1]}</h2>`;
       return;
     }
 
-    // BOTÓN CTA
     if (limpia.includes("TU PRÓXIMO PASO:")) {
       htmlResult += `<div class="caja-cta-naranja"><p class="cta-titulo">TU PRÓXIMO PASO:</p>`;
       enCajaNaranja = true;
       return;
     }
 
-    // LISTAS Y VIÑETAS
     if (limpia.startsWith('- ') || limpia.startsWith('* ')) {
       if (!enLista) { 
-        htmlResult += (enCajaCierre && !enCajaNaranja) ? '<ul class="cierre-list">' : '<ul class="premium-list">'; 
+        if (enSlide) {
+          htmlResult += '<ul class="slide-list">';
+        } else if (enCajaCierre && !enCajaNaranja) {
+          htmlResult += '<ul class="cierre-list">';
+        } else {
+          htmlResult += '<ul class="premium-list">';
+        }
         enLista = true; 
       }
       let itemTexto = limpia.substring(2);
@@ -137,12 +140,11 @@ function procesarMarkdownAHTML(textoCrudo) {
       enLista = false;
     }
 
-    // PÁRRAFOS
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       if (enCajaNaranja) {
          htmlResult += `<p class="cta-texto">${parrafo}</p>`;
-      } else if (enCajaCierre) {
+      } else if (enCajaCierre || enSlide) {
          htmlResult += `<p style="color: #e5e7eb;">${parrafo}</p>`;
       } else {
          htmlResult += `<p>${parrafo}</p>`;
@@ -153,6 +155,7 @@ function procesarMarkdownAHTML(textoCrudo) {
   if (enLista) htmlResult += '</ul>';
   if (enCajaNaranja) htmlResult += '</div>';
   if (enCajaCierre) htmlResult += '</div></div>';
+  if (enSlide) htmlResult += '</div>'; // Asegura el cierre de la última placa negra
   
   return htmlResult;
 }
@@ -180,9 +183,8 @@ function generarPlantillaPDF(textoDiagnostico) {
         padding: 0;
       }
       p, li, .list-item { 
-        font-size: 24px !important; 
+        font-size: 22px !important; 
         line-height: 1.6 !important; 
-        color: #1f2937;
       }
       .section-title { 
         font-size: 32px !important; 
@@ -204,38 +206,52 @@ function generarPlantillaPDF(textoDiagnostico) {
          align-items: center; text-align: center; 
          background-color: #000000; color: #ffffff; padding: 0 80px; box-sizing: border-box; position: relative;
       }
+      .cover-interna {
+         height: 85vh; display: flex; flex-direction: column; justify-content: center;
+         align-items: center; text-align: center; 
+         background-color: #000000; color: #ffffff; padding: 40px 80px; box-sizing: border-box; position: relative;
+         border-radius: 16px; margin-top: 20px;
+      }
+      
       .logo-portada { width: 320px; margin-bottom: 40px; margin-top: 20px; }
-      .cover h1 { font-size: 55px !important; color: var(--rojo-marca); margin-top: 0; margin-bottom: 15px; letter-spacing: 3px; }
-      .cover .subtitle { font-size: 28px !important; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
-      .cover .private { font-size: 20px !important; font-weight: 700; margin-bottom: 50px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
-      .cover .diag-title { font-size: 65px !important; font-weight: 700; margin-bottom: 50px; line-height: 1.1; }
-      .cover .description { 
+      .cover h1, .cover-interna h1 { font-size: 55px !important; color: var(--rojo-marca); margin-top: 0; margin-bottom: 15px; letter-spacing: 3px; }
+      .cover .subtitle, .cover-interna .subtitle { font-size: 28px !important; font-weight: 400; margin-bottom: 10px; color: #d1d5db; }
+      .cover .private, .cover-interna .private { font-size: 20px !important; font-weight: 700; margin-bottom: 40px; color: #9ca3af; letter-spacing: 4px; text-transform: uppercase; }
+      .cover .diag-title, .cover-interna .diag-title { font-size: 65px !important; font-weight: 700; margin-bottom: 40px; line-height: 1.1; }
+      .cover .description, .cover-interna .description { 
         font-size: 24px !important; color: #9ca3af; max-width: 800px; 
         border-top: 2px solid var(--rojo-marca); border-bottom: 2px solid var(--rojo-marca); 
-        padding: 30px 0; margin: 0 auto; line-height: 1.6; margin-bottom: 110px;
+        padding: 30px 0; margin: 0 auto; line-height: 1.6; margin-bottom: 80px;
       }
-      .cover-footer { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; }
+      .cover-footer { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; }
       .cover-footer .label { font-size: 18px !important; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
       .cover-footer .value { font-size: 24px !important; color: #ffffff; font-weight: 600; }
 
       strong { font-weight: 700; color: #000000; }
-      .premium-list { list-style: none; padding-left: 0; margin-top: 20px; margin-bottom: 30px; }
+      .premium-list { list-style: none; padding-left: 0; margin-top: 20px; margin-bottom: 30px; color: #1f2937; }
+      .slide-list { list-style: none; padding-left: 0; margin-top: 20px; margin-bottom: 30px; color: #e5e7eb; }
       .list-item { position: relative; padding-left: 45px; margin-bottom: 24px; }
-      .premium-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
+      .premium-list .list-item::before, .slide-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
 
-      .titulo-accion-wrapper {
+      /* PLACAS NEGRAS DEL PLAN DE ACCIÓN */
+      .accion-slide {
         background-color: #0a0a0a;
-        border-left: 8px solid var(--rojo-marca);
-        padding: 20px 30px;
-        margin-bottom: 40px;
-        border-radius: 0 12px 12px 0;
+        color: #e5e7eb;
+        padding: 45px;
+        border-radius: 16px;
+        margin-top: 20px;
+        border-top: 8px solid var(--rojo-marca);
       }
+      .accion-slide strong { color: #ffffff; }
       .titulo-accion {
         color: #ffffff;
-        font-size: 32px !important;
-        margin: 0;
+        font-size: 30px !important;
+        margin-top: 0;
+        margin-bottom: 30px;
         text-transform: uppercase;
         letter-spacing: 1.5px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 15px;
       }
 
       .contenedor-cierre { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 75vh; }
@@ -248,19 +264,12 @@ function generarPlantillaPDF(textoDiagnostico) {
         text-transform: uppercase; text-align: center; border-top: 2px solid var(--rojo-marca);
         border-bottom: 2px solid var(--rojo-marca); padding: 18px 0; letter-spacing: 1px;
       }
-      .caja-premium-cierre p { color: #e5e7eb; font-size: 22px !important; }
-      .caja-premium-cierre strong { color: #ffffff; }
-      
       .caja-cta-naranja {
         background-color: #2a1005; border: 2px solid var(--naranja-cta); padding: 16px;
         border-radius: 12px; margin-top: 25px; text-align: center;
       }
       .cta-titulo { color: var(--naranja-cta) !important; font-size: 26px !important; margin: 0 0 10px 0 !important; font-weight: bold; }
       .cta-texto { color: #ffffff !important; font-size: 24px !important; margin: 0 !important; }
-
-      .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 20px; }
-      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #e5e7eb; }
-      .cierre-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
     </style>
   </head>
   <body>
@@ -324,4 +333,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Arreglado en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Slides Negras en puerto ${PORT}`));
