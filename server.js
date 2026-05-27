@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Títulos Rojos y CTA Naranja");
+  res.send("Motor PDF Problema Cero: Caja Blindada, CTA Naranja y Título Elegante");
 });
 
 function limpiarTexto(texto) {
@@ -40,11 +40,12 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
+    // INTERVENCIÓN QUIRÚRGICA: Extirpamos emojis y aplicamos el título limpio
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
       htmlResult += `<div class="caja-premium-cierre">`;
-      htmlResult += `<h2 class="cierre-titulo">${limpia}</h2>`;
+      htmlResult += `<h2 class="cierre-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>`;
       return;
     }
 
@@ -160,39 +161,58 @@ function generarPlantillaPDF(textoDiagnostico) {
       .list-item { position: relative; padding-left: 45px; margin-bottom: 24px; }
       .premium-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
 
+      /* CAJA BLINDADA */
       .caja-premium-cierre {
         background-color: #0a0a0a;
         color: #ffffff;
         border: 3px solid var(--rojo-marca);
-        padding: 50px;
-        margin-top: 20px;
+        padding: 35px;
+        margin-top: 10px;
         border-radius: 16px;
         page-break-inside: avoid; 
+        break-inside: avoid;
+        display: inline-block; 
+        width: 100%;
+        box-sizing: border-box;
       }
-      .caja-premium-cierre .cierre-titulo { color: var(--rojo-marca); font-size: 32px !important; margin-top: 0; margin-bottom: 25px; text-transform: uppercase; text-align: center; }
-      .caja-premium-cierre p { color: #e5e7eb; font-size: 24px !important; }
+
+      /* TÍTULO ELEGANTE SIN EMOJIS ROTOS */
+      .caja-premium-cierre .cierre-titulo { 
+        color: var(--rojo-marca); 
+        font-size: 26px !important; 
+        margin-top: 0; 
+        margin-bottom: 25px; 
+        text-transform: uppercase; 
+        text-align: center; 
+        border-top: 2px solid var(--rojo-marca);
+        border-bottom: 2px solid var(--rojo-marca);
+        padding: 18px 0;
+        letter-spacing: 1px;
+      }
+
+      .caja-premium-cierre p { color: #e5e7eb; font-size: 22px !important; }
       .caja-premium-cierre strong { color: #ffffff; }
       
-      /* ESTILOS DEL BLOQUE CTA NARANJA */
+      /* ESTILOS DEL BLOQUE CTA NARANJA COMPRIMIDO */
       .caja-cta-naranja {
         background-color: #2a1005; 
         border: 2px solid var(--naranja-cta);
-        padding: 22px;
+        padding: 16px;
         border-radius: 12px;
-        margin-top: 35px;
+        margin-top: 25px;
         text-align: center;
       }
       .caja-cta-naranja p {
         color: var(--naranja-cta) !important;
-        font-size: 26px !important;
+        font-size: 24px !important;
         margin: 0 !important;
       }
       .caja-cta-naranja strong {
         color: #ffffff !important;
       }
 
-      .cierre-list { list-style: none; padding-left: 0; margin-top: 20px; margin-bottom: 30px; }
-      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 24px; color: #e5e7eb; }
+      .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 20px; }
+      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #e5e7eb; }
       .cierre-list .list-item::before { content: "•"; color: var(--rojo-marca); font-weight: bold; font-size: 40px; position: absolute; left: 0; top: -6px; }
     </style>
   </head>
@@ -254,4 +274,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Títulos Rojos y CTA Naranja en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF: Caja Blindada, CTA Naranja y Título Elegante en puerto ${PORT}`));
