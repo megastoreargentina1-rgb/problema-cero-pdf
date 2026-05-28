@@ -22,7 +22,7 @@ function procesarMarkdownAHTML(textoCrudo) {
   let enLista = false;
   let enCajaCierre = false;
   let enCajaNaranja = false;
-  let ignorarResto = false; // Nueva bandera para cortar el texto sobrante al final
+  let ignorarResto = false;
 
   lineas.forEach(linea => {
     if (ignorarResto) return;
@@ -76,7 +76,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // CAJA DEL CTA NUEVO (PLAN DE ACCIÓN) - REEMPLAZA A LA BANDA BLANCA
+    // CAJA DEL CTA NUEVO (PLAN DE ACCIÓN)
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PUNTO DE PARTIDA") || limpia.includes("TU SIGUIENTE NIVEL DE EJECUCIÓN") || limpia.includes("TU SIGUIENTE NIVEL:")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       htmlResult += `<div class="page-break"></div>`; 
@@ -86,7 +86,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       htmlResult += `<p>Detectar el bloqueo estructural de tu negocio es vital, pero la transformación real ocurre en la acción. Tienes la hoja de ruta exacta; es momento de pasar de la teoría a la implementación concreta sin improvisar.</p>`;
       htmlResult += `<a href="https://problemacero.com.ar" class="btn-premium">DESBLOQUEAR RUTA DE 30 DÍAS</a>`;
       htmlResult += `</div></div>`;
-      ignorarResto = true; // Ignora el resto del texto para que no se dupliquen las instrucciones de ChatGPT
+      ignorarResto = true;
       return;
     }
 
@@ -188,7 +188,9 @@ function generarPlantillaPDF(textoDiagnostico) {
         margin: 0;
         padding: 0;
       }
-      .page-content { padding: 50px 90px; }
+      
+      /* ACÁ ESTÁ LA MAGIA DE LOS MÁRGENES */
+      .page-content { padding: 50px 110px; }
       .page-break { page-break-before: always; height: 1px; }
       
       /* CARÁTULAS NEGRAS */
@@ -240,17 +242,21 @@ function generarPlantillaPDF(textoDiagnostico) {
         font-weight: 300;
       }
       
+      /* ACÁ LIMITAMOS EL ANCHO DEL TEXTO A 720px */
       .texto-editorial, p {
         font-size: 24px !important;
         line-height: 1.6 !important;
         color: var(--texto-secundario);
         font-weight: 300;
         margin-bottom: 28px;
-        max-width: 95%;
+        max-width: 720px;
+        margin-right: auto;
       }
       strong { font-weight: 600; color: #000000; }
 
       .editorial-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 40px; }
+      
+      /* ACÁ TAMBIÉN LIMITAMOS EL ANCHO DE LAS LISTAS */
       .list-item { 
         position: relative; 
         padding-left: 45px; 
@@ -259,7 +265,8 @@ function generarPlantillaPDF(textoDiagnostico) {
         line-height: 1.6 !important; 
         color: var(--texto-secundario); 
         font-weight: 300; 
-        max-width: 95%;
+        max-width: 720px;
+        margin-right: auto;
       }
       .editorial-list .list-item::before { 
         content: "—"; 
