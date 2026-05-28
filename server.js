@@ -22,8 +22,11 @@ function procesarMarkdownAHTML(textoCrudo) {
   let enLista = false;
   let enCajaCierre = false;
   let enCajaNaranja = false;
+  let ignorarResto = false; // Nueva bandera para cortar el texto sobrante al final
 
   lineas.forEach(linea => {
+    if (ignorarResto) return;
+
     let limpia = linea.trim();
     if (!limpia) return;
 
@@ -73,7 +76,21 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // CAJA DEL CTA
+    // CAJA DEL CTA NUEVO (PLAN DE ACCIÓN) - REEMPLAZA A LA BANDA BLANCA
+    if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PUNTO DE PARTIDA") || limpia.includes("TU SIGUIENTE NIVEL DE EJECUCIÓN") || limpia.includes("TU SIGUIENTE NIVEL:")) {
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      htmlResult += `<div class="page-break"></div>`; 
+      htmlResult += `<div class="contenedor-cierre">`;
+      htmlResult += `<div class="black-box-cta">`;
+      htmlResult += `<h3>TU SIGUIENTE NIVEL DE EJECUCIÓN</h3>`;
+      htmlResult += `<p>Detectar el bloqueo estructural de tu negocio es vital, pero la transformación real ocurre en la acción. Tienes la hoja de ruta exacta; es momento de pasar de la teoría a la implementación concreta sin improvisar.</p>`;
+      htmlResult += `<a href="https://problemacero.com.ar" class="btn-premium">DESBLOQUEAR RUTA DE 30 DÍAS</a>`;
+      htmlResult += `</div></div>`;
+      ignorarResto = true; // Ignora el resto del texto para que no se dupliquen las instrucciones de ChatGPT
+      return;
+    }
+
+    // CAJA DEL CTA VIEJO (DIAGNÓSTICO)
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       enCajaCierre = true;
@@ -254,7 +271,7 @@ function generarPlantillaPDF(textoDiagnostico) {
         top: 0; 
       }
 
-      /* CAJA CTA CIERRE DIAGNÓSTICO */
+      /* CAJA CTA CIERRE DIAGNÓSTICO (VIEJA) */
       .contenedor-cierre { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 75vh; }
       .caja-premium-cierre {
         background-color: #0a0a0a; color: #ffffff; border: 1px solid #334155;
@@ -274,6 +291,50 @@ function generarPlantillaPDF(textoDiagnostico) {
       .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 20px; }
       .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #9ca3af; font-weight: 300; }
       .cierre-list .list-item::before { content: "—"; color: var(--rojo-marca); position: absolute; left: 0; top: 0; }
+
+      /* NUEVA CAJA NEGRA CTA (PLAN DE ACCIÓN) */
+      .black-box-cta {
+          background-color: #0a0a0a;
+          color: #ffffff;
+          padding: 60px 50px;
+          border: 1px solid #334155;
+          border-radius: 8px;
+          margin: 0 auto;
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+      }
+      .black-box-cta h3 {
+          font-size: 28px !important;
+          font-weight: 700;
+          letter-spacing: 2px;
+          margin: 0 0 20px 0;
+          color: #ffffff;
+          text-transform: uppercase;
+          border-bottom: 1px solid var(--rojo-marca);
+          padding-bottom: 20px;
+          display: inline-block;
+      }
+      .black-box-cta p {
+          font-size: 22px !important;
+          font-weight: 300;
+          line-height: 1.6;
+          color: #e5e7eb;
+          margin: 0 auto 40px auto !important;
+          max-width: 90%;
+      }
+      .btn-premium {
+          display: inline-block;
+          background-color: var(--rojo-marca);
+          color: #ffffff !important;
+          text-decoration: none;
+          padding: 18px 40px;
+          font-weight: 600;
+          font-size: 20px;
+          letter-spacing: 1px;
+          border-radius: 4px;
+          text-transform: uppercase;
+      }
     </style>
   </head>
   <body>
@@ -337,4 +398,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF: Tipografía 24px en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero corriendo en el puerto ${PORT}`));
