@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Márgenes Corregidos)");
+  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Tipografía 24px)");
 });
 
 function limpiarTexto(texto) {
@@ -192,7 +192,6 @@ function generarPlantillaPDF(textoDiagnostico) {
       .page-content { padding: 50px 110px; }
       .page-break { page-break-before: always; height: 1px; }
       
-      /* CARÁTULAS NEGRAS */
       .cover {
          height: 100vh; display: flex; flex-direction: column; justify-content: center;
          align-items: center; text-align: center; 
@@ -218,7 +217,6 @@ function generarPlantillaPDF(textoDiagnostico) {
       .cover-footer .label { font-size: 14px !important; color: #6b7280; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px; font-weight: 600; }
       .cover-footer .value { font-size: 22px !important; color: #ffffff; font-weight: 400; letter-spacing: 1px; }
 
-      /* ESTILOS EDITORIALES HIGH-TICKET */
       .editorial-header {
         margin-bottom: 40px;
         padding-bottom: 20px;
@@ -275,11 +273,10 @@ function generarPlantillaPDF(textoDiagnostico) {
         top: 0; 
       }
 
-      /* CAJA CTA CIERRE DIAGNÓSTICO */
       .contenedor-cierre { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 75vh; }
       .caja-premium-cierre {
         background-color: #0a0a0a; color: #ffffff; border: 1px solid #334155;
-        padding: 50px; margin: 0 auto; display: block; width: 100%; max-width: 820px; box-sizing: border-box; text-align: center;
+        padding: 50px; margin: 0 auto; display: block; width: 100%; box-sizing: border-box; text-align: center;
       }
       .caja-premium-cierre .cierre-titulo { 
         color: #ffffff; font-size: 26px !important; margin-top: 0; margin-bottom: 30px; 
@@ -296,7 +293,6 @@ function generarPlantillaPDF(textoDiagnostico) {
       .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #9ca3af; font-weight: 300; }
       .cierre-list .list-item::before { content: "—"; color: var(--rojo-marca); position: absolute; left: 0; top: 0; }
 
-      /* CORRECCIÓN CAJA NEGRA CTA - AHORA CENTRADA Y LIMITADA */
       .black-box-cta {
           background-color: #0a0a0a;
           color: #ffffff;
@@ -304,10 +300,9 @@ function generarPlantillaPDF(textoDiagnostico) {
           border: 1px solid #334155;
           border-radius: 8px;
           margin: 0 auto;
-          max-width: 820px;
+          text-align: center;
           width: 100%;
           box-sizing: border-box;
-          text-align: center;
       }
       .black-box-cta h3 {
           font-size: 28px !important;
@@ -326,7 +321,7 @@ function generarPlantillaPDF(textoDiagnostico) {
           line-height: 1.6;
           color: #e5e7eb;
           margin: 0 auto 40px auto !important;
-          max-width: 720px;
+          max-width: 90%;
       }
       .btn-premium {
           display: inline-block;
@@ -377,7 +372,7 @@ app.post("/*", async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: "A4", 
       printBackground: true, 
-      margin: { top: "50px", bottom: "80px", left: "0px", right: "0px" },
+      margin: { top: "60px", bottom: "60px", left: "60px", right: "60px" },
       displayHeaderFooter: true, 
       headerTemplate: "<div></div>",
       footerTemplate: `<div style="font-size: 12px; width: 100%; color: #9ca3af; padding: 0 90px; display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; letter-spacing: 1px; -webkit-print-color-adjust: exact;"><span>PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
