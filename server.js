@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Tipografía 24px)");
+  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Márgenes Corregidos)");
 });
 
 function limpiarTexto(texto) {
@@ -68,8 +68,8 @@ function procesarMarkdownAHTML(textoCrudo) {
         </div>
 
         <div style="max-width: 750px; margin: 0 auto; text-align: left; padding-left: 25px; border-left: 3px solid var(--rojo-marca);">
-           <div style="color: #ffffff; font-size: 16px !important; font-weight: 600; margin-bottom: 10px; letter-spacing: 2px; text-transform: uppercase;">Línea Abierta Activada</div>
-           <div style="color: #9ca3af; font-size: 22px !important; line-height: 1.5; margin: 0; font-weight: 300;">La claridad sin ejecución es solo entretenimiento. Si durante estos 30 días necesitás calibrar la estrategia o destrabar un paso específico, tu canal para solicitar una interconsulta 1 a 1 sigue activo en la plataforma.</div>
+            <div style="color: #ffffff; font-size: 16px !important; font-weight: 600; margin-bottom: 10px; letter-spacing: 2px; text-transform: uppercase;">Línea Abierta Activada</div>
+            <div style="color: #9ca3af; font-size: 22px !important; line-height: 1.5; margin: 0; font-weight: 300;">La claridad sin ejecución es solo entretenimiento. Si durante estos 30 días necesitás calibrar la estrategia o destrabar un paso específico, tu canal para solicitar una interconsulta 1 a 1 sigue activo en la plataforma.</div>
         </div>
       </div>
       `;
@@ -150,11 +150,11 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (!limpia.startsWith('<')) {
       let parrafo = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       if (enCajaNaranja) {
-         htmlResult += `<p class="cta-texto">${parrafo}</p>`;
+          htmlResult += `<p class="cta-texto">${parrafo}</p>`;
       } else if (enCajaCierre) {
-         htmlResult += `<p style="color: #e5e7eb;">${parrafo}</p>`;
+          htmlResult += `<p style="color: #e5e7eb;">${parrafo}</p>`;
       } else {
-         htmlResult += `<p class="texto-editorial">${parrafo}</p>`;
+          htmlResult += `<p class="texto-editorial">${parrafo}</p>`;
       }
     }
   });
@@ -189,21 +189,25 @@ function generarPlantillaPDF(textoDiagnostico) {
         padding: 0;
       }
       
-      /* ACÁ ESTÁ LA MAGIA DE LOS MÁRGENES */
-      .page-content { padding: 50px 110px; }
+      /* ACÁ ESTÁ LA MAGIA DE LOS MÁRGENES - CENTRADO Y RESPIRACIÓN */
+      .page-content { 
+        padding: 0 40px; 
+        max-width: 720px; 
+        margin: 0 auto; 
+      }
       .page-break { page-break-before: always; height: 1px; }
       
       /* CARÁTULAS NEGRAS */
       .cover {
-         height: 100vh; display: flex; flex-direction: column; justify-content: center;
-         align-items: center; text-align: center; 
-         background-color: #0a0a0a; color: #ffffff; padding: 0 80px; box-sizing: border-box; position: relative;
+          height: 100vh; display: flex; flex-direction: column; justify-content: center;
+          align-items: center; text-align: center; 
+          background-color: #0a0a0a; color: #ffffff; padding: 0 80px; box-sizing: border-box; position: relative;
       }
       .cover-interna {
-         height: 100vh; display: flex; flex-direction: column; justify-content: center;
-         align-items: center; text-align: center; 
-         background-color: #0a0a0a; color: #ffffff; padding: 40px 80px; box-sizing: border-box; position: relative;
-         page-break-inside: avoid;
+          height: 100vh; display: flex; flex-direction: column; justify-content: center;
+          align-items: center; text-align: center; 
+          background-color: #0a0a0a; color: #ffffff; padding: 40px 80px; box-sizing: border-box; position: relative;
+          page-break-inside: avoid;
       }
       .logo-portada { width: 280px; margin-bottom: 50px; margin-top: 20px; }
       .cover h1 { font-size: 44px !important; color: var(--rojo-marca); margin-top: 0; margin-bottom: 15px; letter-spacing: 4px; font-weight: 700; }
@@ -242,30 +246,26 @@ function generarPlantillaPDF(textoDiagnostico) {
         font-weight: 300;
       }
       
-      /* ACÁ LIMITAMOS EL ANCHO DEL TEXTO A 720px */
-      .texto-editorial, p {
-        font-size: 24px !important;
-        line-height: 1.6 !important;
+      .texto-editorial {
+        font-size: 22px !important;
+        line-height: 1.7 !important;
         color: var(--texto-secundario);
         font-weight: 300;
         margin-bottom: 28px;
-        max-width: 720px;
         margin-right: auto;
       }
       strong { font-weight: 600; color: #000000; }
 
       .editorial-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 40px; }
       
-      /* ACÁ TAMBIÉN LIMITAMOS EL ANCHO DE LAS LISTAS */
       .list-item { 
         position: relative; 
         padding-left: 45px; 
         margin-bottom: 24px; 
-        font-size: 24px !important; 
+        font-size: 22px !important; 
         line-height: 1.6 !important; 
         color: var(--texto-secundario); 
         font-weight: 300; 
-        max-width: 720px;
         margin-right: auto;
       }
       .editorial-list .list-item::before { 
@@ -293,10 +293,10 @@ function generarPlantillaPDF(textoDiagnostico) {
         margin-top: 35px; text-align: center;
       }
       .cta-titulo { color: var(--rojo-marca) !important; font-size: 16px !important; margin: 0 0 10px 0 !important; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
-      .cta-texto { color: var(--texto-principal) !important; font-size: 24px !important; margin: 0 !important; font-weight: 400; }
+      .cta-texto { color: var(--texto-principal) !important; font-size: 22px !important; margin: 0 !important; font-weight: 400; }
 
       .cierre-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 20px; }
-      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #9ca3af; font-weight: 300; }
+      .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 20px !important; color: #9ca3af; font-weight: 300; }
       .cierre-list .list-item::before { content: "—"; color: var(--rojo-marca); position: absolute; left: 0; top: 0; }
 
       /* NUEVA CAJA NEGRA CTA (PLAN DE ACCIÓN) */
@@ -347,27 +347,18 @@ function generarPlantillaPDF(textoDiagnostico) {
   <body>
     <div class="cover">
       <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
-      
       <h1>PROBLEMA CERO</h1>
       <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
       <div class="private">INFORME PRIVADO</div>
-      
       <div class="diag-title">Diagnóstico<br>estratégico</div>
-      
-      <div class="description">
-        Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
-      </div>
-
+      <div class="description">Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.</div>
       <div class="cover-footer">
         <div class="label">Dirección Estratégica</div>
         <div class="value">Lic. Hernán Mariano Waisman</div>
       </div>
     </div>
     <div class="page-break"></div>
-
-    <div class="page-content">
-      ${contenidoHTML}
-    </div>
+    <div class="page-content">${contenidoHTML}</div>
   </body>
   </html>
   `;
@@ -377,32 +368,28 @@ app.post("/*", async (req, res) => {
   let browser = null;
   try {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
-    if (!diagnostico) return res.status(400).json({ error: "No se envió texto para el PDF" });
+    if (!diagnostico) return res.status(400).json({ error: "No se envió texto" });
 
     const htmlFinal = generarPlantillaPDF(diagnostico);
 
-    browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+    browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox"] });
     const page = await browser.newPage();
     await page.setContent(htmlFinal, { waitUntil: "networkidle0" });
 
     const pdfBuffer = await page.pdf({
       format: "A4", 
       printBackground: true, 
-      margin: { top: "50px", bottom: "80px", left: "0px", right: "0px" },
-      displayHeaderFooter: true, 
-      headerTemplate: "<div></div>",
-      footerTemplate: `<div style="font-size: 12px; width: 100%; color: #9ca3af; padding: 0 90px; display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; letter-spacing: 1px; -webkit-print-color-adjust: exact;"><span>PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
+      margin: { top: "60px", bottom: "60px", left: "60px", right: "60px" } // MÁRGENES ESTÁNDAR
     });
     
-    res.set({ "Content-Type": "application/pdf", "Content-Disposition": "attachment; filename=Diagnostico_ProblemaCero.pdf", "Content-Length": pdfBuffer.length });
+    res.set({ "Content-Type": "application/pdf", "Content-Disposition": "attachment; filename=Diagnostico.pdf" });
     res.send(pdfBuffer);
   } catch (error) {
-    console.error("❌ Error:", error);
-    res.status(500).json({ error: "Falla interna", detalle: error.message });
+    res.status(500).json({ error: error.message });
   } finally {
     if (browser) await browser.close();
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero corriendo en el puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF en puerto ${PORT}`));
