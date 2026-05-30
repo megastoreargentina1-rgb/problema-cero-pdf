@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Tipografía 24px)");
+  res.send("Motor PDF Problema Cero: Arquitectura Editorial High-Ticket (Márgenes Corregidos)");
 });
 
 function limpiarTexto(texto) {
@@ -189,7 +189,6 @@ function generarPlantillaPDF(textoDiagnostico) {
         padding: 0;
       }
       
-      /* ACÁ ESTÁ LA MAGIA DE LOS MÁRGENES */
       .page-content { padding: 50px 110px; }
       .page-break { page-break-before: always; height: 1px; }
       
@@ -242,8 +241,7 @@ function generarPlantillaPDF(textoDiagnostico) {
         font-weight: 300;
       }
       
-      /* ACÁ LIMITAMOS EL ANCHO DEL TEXTO A 720px */
-      .texto-editorial, p {
+      .texto-editorial {
         font-size: 24px !important;
         line-height: 1.6 !important;
         color: var(--texto-secundario);
@@ -256,7 +254,6 @@ function generarPlantillaPDF(textoDiagnostico) {
 
       .editorial-list { list-style: none; padding-left: 0; margin-top: 15px; margin-bottom: 40px; }
       
-      /* ACÁ TAMBIÉN LIMITAMOS EL ANCHO DE LAS LISTAS */
       .list-item { 
         position: relative; 
         padding-left: 45px; 
@@ -278,11 +275,11 @@ function generarPlantillaPDF(textoDiagnostico) {
         top: 0; 
       }
 
-      /* CAJA CTA CIERRE DIAGNÓSTICO (VIEJA) */
+      /* CAJA CTA CIERRE DIAGNÓSTICO */
       .contenedor-cierre { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 75vh; }
       .caja-premium-cierre {
         background-color: #0a0a0a; color: #ffffff; border: 1px solid #334155;
-        padding: 50px; margin: 0 auto; display: block; width: 100%; box-sizing: border-box; text-align: center;
+        padding: 50px; margin: 0 auto; display: block; width: 100%; max-width: 820px; box-sizing: border-box; text-align: center;
       }
       .caja-premium-cierre .cierre-titulo { 
         color: #ffffff; font-size: 26px !important; margin-top: 0; margin-bottom: 30px; 
@@ -299,7 +296,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       .cierre-list .list-item { position: relative; padding-left: 45px; margin-bottom: 16px; font-size: 22px !important; color: #9ca3af; font-weight: 300; }
       .cierre-list .list-item::before { content: "—"; color: var(--rojo-marca); position: absolute; left: 0; top: 0; }
 
-      /* NUEVA CAJA NEGRA CTA (PLAN DE ACCIÓN) */
+      /* CORRECCIÓN CAJA NEGRA CTA - AHORA CENTRADA Y LIMITADA */
       .black-box-cta {
           background-color: #0a0a0a;
           color: #ffffff;
@@ -307,9 +304,10 @@ function generarPlantillaPDF(textoDiagnostico) {
           border: 1px solid #334155;
           border-radius: 8px;
           margin: 0 auto;
-          text-align: center;
+          max-width: 820px;
           width: 100%;
           box-sizing: border-box;
+          text-align: center;
       }
       .black-box-cta h3 {
           font-size: 28px !important;
@@ -328,7 +326,7 @@ function generarPlantillaPDF(textoDiagnostico) {
           line-height: 1.6;
           color: #e5e7eb;
           margin: 0 auto 40px auto !important;
-          max-width: 90%;
+          max-width: 720px;
       }
       .btn-premium {
           display: inline-block;
@@ -347,27 +345,18 @@ function generarPlantillaPDF(textoDiagnostico) {
   <body>
     <div class="cover">
       <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
-      
       <h1>PROBLEMA CERO</h1>
       <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
       <div class="private">INFORME PRIVADO</div>
-      
       <div class="diag-title">Diagnóstico<br>estratégico</div>
-      
-      <div class="description">
-        Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.
-      </div>
-
+      <div class="description">Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.</div>
       <div class="cover-footer">
         <div class="label">Dirección Estratégica</div>
         <div class="value">Lic. Hernán Mariano Waisman</div>
       </div>
     </div>
     <div class="page-break"></div>
-
-    <div class="page-content">
-      ${contenidoHTML}
-    </div>
+    <div class="page-content">${contenidoHTML}</div>
   </body>
   </html>
   `;
