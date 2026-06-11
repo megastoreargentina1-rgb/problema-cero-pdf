@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v3.1");
+  res.send("Motor PDF Problema Cero v3.2");
 });
 
 function limpiarTexto(texto) {
@@ -296,7 +296,7 @@ function generarPlantillaPDF(textoDiagnostico) {
 
     /* ── CONTENIDO ── */
     .page-content {
-      padding: 60px 80px;
+      padding: 70px 80px;
     }
     .page-break {
       page-break-before: always;
@@ -319,7 +319,7 @@ function generarPlantillaPDF(textoDiagnostico) {
     }
     .editorial-title {
       color: #111111;
-      font-size: 30px;
+      font-size: 34px;
       text-transform: uppercase;
       letter-spacing: 1px;
       font-weight: 700;
@@ -327,18 +327,18 @@ function generarPlantillaPDF(textoDiagnostico) {
 
     /* ── TEXTO ── */
     .texto-editorial {
-      font-size: 20px;
-      line-height: 1.8;
+      font-size: 23px;
+      line-height: 1.85;
       color: #111111;
       font-weight: 400;
-      margin-bottom: 22px;
+      margin-bottom: 24px;
     }
     .subtitulo-seccion {
-      font-size: 18px;
+      font-size: 21px;
       font-weight: 700;
       color: #111111;
-      margin-bottom: 12px;
-      margin-top: 10px;
+      margin-bottom: 14px;
+      margin-top: 12px;
     }
     strong { font-weight: 700; color: #000000; }
 
@@ -352,8 +352,8 @@ function generarPlantillaPDF(textoDiagnostico) {
       position: relative;
       padding-left: 30px;
       margin-bottom: 20px;
-      font-size: 20px;
-      line-height: 1.8;
+      font-size: 23px;
+      line-height: 1.85;
       color: #111111;
       font-weight: 400;
     }
@@ -394,9 +394,9 @@ function generarPlantillaPDF(textoDiagnostico) {
     }
     .texto-cierre {
       color: #e5e7eb;
-      font-size: 20px;
-      line-height: 1.8;
-      margin-bottom: 16px;
+      font-size: 23px;
+      line-height: 1.85;
+      margin-bottom: 18px;
       font-weight: 300;
     }
     .cierre-list { list-style: none; padding-left: 0; margin: 10px 0 20px 0; }
@@ -546,4 +546,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.1 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.2 activo en puerto ${PORT}`));
