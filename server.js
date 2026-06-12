@@ -506,9 +506,10 @@ function generarHtmlDiagnostico(data) {
 // PUPPETEER → PDF
 // ─────────────────────────────────────────────
 async function htmlAPdf(html) {
+  const { executablePath } = require("puppeteer");
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    executablePath: executablePath(),
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
