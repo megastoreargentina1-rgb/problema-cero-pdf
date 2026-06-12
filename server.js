@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v3.2");
+  res.send("Motor PDF Problema Cero v3.3");
 });
 
 function limpiarTexto(texto) {
@@ -138,7 +138,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       const tituloLimpio = matchTitulo[1].trim().toUpperCase();
 
       // SIEMPRE nueva página para cada sección
-      htmlResult += '<div class="page-break"></div>';
+      htmlResult += '<div class="page-break"></div><div class="seccion-wrapper">';
 
       let kickerText = 'Lectura Estratégica';
       const titulos_decision = ["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"];
@@ -196,6 +196,7 @@ function procesarMarkdownAHTML(textoCrudo) {
   if (enLista) htmlResult += '</ul>';
   if (enCajaNaranja) htmlResult += '</div>';
   if (enCajaCierre) htmlResult += '</div></div>';
+  htmlResult += '</div>'; // cerrar último seccion-wrapper
 
   return htmlResult;
 }
@@ -235,9 +236,9 @@ function generarPlantillaPDF(textoDiagnostico) {
       padding: 60px;
       page-break-after: always;
     }
-    .logo-portada { width: 180px; margin-bottom: 36px; }
+    .logo-portada { width: 220px; margin-bottom: 40px; }
     .cover h1, .cover-interna h1 {
-      font-size: 36px;
+      font-size: 40px;
       color: var(--rojo);
       letter-spacing: 4px;
       font-weight: 700;
@@ -259,7 +260,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       margin-bottom: 44px;
     }
     .cover .diag-title, .cover-interna .diag-title {
-      font-size: 54px;
+      font-size: 62px;
       font-weight: 300;
       line-height: 1.15;
       margin-bottom: 36px;
@@ -299,8 +300,12 @@ function generarPlantillaPDF(textoDiagnostico) {
       padding: 70px 80px;
     }
     .page-break {
-      page-break-before: always;
-      height: 1px;
+      display: block;
+      page-break-after: always;
+      break-after: page;
+      height: 0;
+      margin: 0;
+      padding: 0;
     }
 
     /* ── ENCABEZADOS DE SECCIÓN ── */
@@ -469,6 +474,12 @@ function generarPlantillaPDF(textoDiagnostico) {
       margin: 0 auto 36px auto;
       max-width: 80%;
     }
+    .seccion-wrapper {
+      display: block;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      padding-bottom: 20px;
+    }
     .btn-premium {
       display: inline-block;
       background-color: var(--rojo);
@@ -546,4 +557,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.2 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.3 activo en puerto ${PORT}`));
