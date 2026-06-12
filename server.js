@@ -39,25 +39,25 @@ function parsearContenido(texto) {
 
   for (const linea of lineas) {
     const limpia = linea.replace(/^[-—•]\s*/, "").trim();
-    if (/MAPA EJECUTIVO/i.test(linea))                                          { sec = "mapaEjecutivo"; continue; }
-    if (/PRIORIDAD ABSOLUTA/i.test(linea))                                      { sec = "prioridad"; continue; }
-    if (/QU[EÉ] DEJAR DE HACER/i.test(linea))                                  { sec = "dejarDeHacer"; continue; }
-    if (/QU[EÉ] CORREGIR PRIMERO/i.test(linea))                                { sec = "corregirPrimero"; continue; }
-    if (/PR[OÓ]XIMOS 7 D[IÍ]AS/i.test(linea) || /PLAN DE ACCI[OÓ]N.*7/i.test(linea)) { sec = "dias7"; continue; }
-    if (/PR[OÓ]XIMOS 30 D[IÍ]AS/i.test(linea) || /PLAN DE ACCI[OÓ]N.*30/i.test(linea)) { sec = "semanas30"; continue; }
-    if (/CONTENIDO QUE DEB[EÉ]R[IÍ]A/i.test(linea) || /CONTENIDO A CREAR/i.test(linea)) { sec = "contenido"; itemActual = null; continue; }
-    if (/MENSAJES DE VENTA/i.test(linea))                                       { sec = "mensajesVenta"; continue; }
-    if (/M[EÉ]TRICA/i.test(linea))                                              { sec = "metricas"; itemActual = null; continue; }
-    if (/SI\s*[\/]\s*ENTONCES/i.test(linea) || /⚠.*SI/i.test(linea))           { sec = "siEntonces"; continue; }
-    if (/CIERRE/i.test(linea))                                                  { sec = "cierre"; continue; }
-    if (/AN[AÁ]LISIS COMPLETO/i.test(linea))                                   { continue; }
+    if (/MAPA EJECUTIVO/i.test(linea))                                                   { sec = "mapaEjecutivo"; continue; }
+    if (/PRIORIDAD ABSOLUTA/i.test(linea))                                               { sec = "prioridad"; continue; }
+    if (/QU[EÉ] DEJAR DE HACER/i.test(linea))                                           { sec = "dejarDeHacer"; continue; }
+    if (/QU[EÉ] CORREGIR PRIMERO/i.test(linea))                                         { sec = "corregirPrimero"; continue; }
+    if (/PR[OÓ]XIMOS 7 D[IÍ]AS/i.test(linea) || /PLAN DE ACCI[OÓ]N.*7/i.test(linea))  { sec = "dias7"; continue; }
+    if (/PR[OÓ]XIMOS 30 D[IÍ]AS/i.test(linea) || /PLAN DE ACCI[OÓ]N.*30/i.test(linea)){ sec = "semanas30"; continue; }
+    if (/CONTENIDO QUE DEB[EÉ]R[IÍ]A/i.test(linea) || /CONTENIDO A CREAR/i.test(linea)){ sec = "contenido"; itemActual = null; continue; }
+    if (/MENSAJES DE VENTA/i.test(linea))                                                { sec = "mensajesVenta"; continue; }
+    if (/M[EÉ]TRICA/i.test(linea))                                                      { sec = "metricas"; itemActual = null; continue; }
+    if (/SI\s*[\/]\s*ENTONCES/i.test(linea) || /⚠.*SI/i.test(linea))                   { sec = "siEntonces"; continue; }
+    if (/CIERRE/i.test(linea))                                                           { sec = "cierre"; continue; }
+    if (/AN[AÁ]LISIS COMPLETO/i.test(linea))                                            { continue; }
     if (!sec || !limpia) continue;
 
     switch (sec) {
-      case "mapaEjecutivo":    s.mapaEjecutivo.push(limpia); break;
-      case "prioridad":        s.prioridad += (s.prioridad ? " " : "") + limpia; break;
-      case "dejarDeHacer":     s.dejarDeHacer.push(limpia); break;
-      case "corregirPrimero":  s.corregirPrimero.push(limpia); break;
+      case "mapaEjecutivo":   s.mapaEjecutivo.push(limpia); break;
+      case "prioridad":       s.prioridad += (s.prioridad ? " " : "") + limpia; break;
+      case "dejarDeHacer":    s.dejarDeHacer.push(limpia); break;
+      case "corregirPrimero": s.corregirPrimero.push(limpia); break;
       case "dias7": {
         const m = limpia.match(/(?:\*\*)?D[ií]a\s*(\d+)[:\*]*/i);
         if (m) s.dias7.push({ numero: m[1], texto: limpia.replace(/(?:\*\*)?D[ií]a\s*\d+[:\*\s]*/i,"").replace(/\*\*/g,"").trim() });
@@ -115,7 +115,7 @@ const LOGO_SVG = `<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/
 </svg>`;
 
 // ─────────────────────────────────────────────
-// PIE
+// PIE DE PÁGINA
 // ─────────────────────────────────────────────
 function pie(num, dark) {
   const border = dark ? "#333" : "#E0E0E0";
@@ -215,24 +215,20 @@ function renderDejarCorregir(dejar, corregir, pgNum) {
 }
 
 // ─────────────────────────────────────────────
-// SECCIÓN: 7 DÍAS — línea de tiempo vertical con conector
+// SECCIÓN: 7 DÍAS — línea de tiempo vertical
 // ─────────────────────────────────────────────
 function renderDias7(dias, pgNum) {
   let html = headerSeccion("Plan de acción", "Próximos 7 Días");
   html += `<div style="position:relative;padding-left:90px;">`;
-
-  // Línea vertical conectora
   html += `<div style="position:absolute;left:31px;top:8px;bottom:8px;width:3px;background:linear-gradient(to bottom, ${ROJO}, #333);border-radius:2px;"></div>`;
 
   dias.forEach((d, i) => {
     const esUltimo = i === dias.length - 1;
     html += `<div style="position:relative;margin-bottom:${esUltimo ? "0" : "20px"};">
-      <!-- Nodo circular en la línea -->
       <div style="position:absolute;left:-90px;top:50%;transform:translateY(-50%);width:62px;height:62px;background:${ROJO};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(192,57,43,0.35);">
         <span style="font-size:9px;font-weight:400;letter-spacing:2px;color:rgba(255,255,255,0.7);text-transform:uppercase;font-family:'Inter',Arial,sans-serif">DÍA</span>
         <span style="font-size:24px;font-weight:900;color:#fff;line-height:1;font-family:'Inter',Arial,sans-serif">${esc(d.numero)}</span>
       </div>
-      <!-- Tarjeta de contenido -->
       <div style="background:#FAFAFA;border:1px solid #E8E8E8;border-left:3px solid ${ROJO};border-radius:0 6px 6px 0;padding:18px 22px;min-height:62px;display:flex;align-items:center;">
         <span style="font-size:21px;font-weight:400;color:${NEGRO};line-height:1.5;font-family:'Inter',Arial,sans-serif">${esc(d.texto)}</span>
       </div>
@@ -244,12 +240,11 @@ function renderDias7(dias, pgNum) {
 }
 
 // ─────────────────────────────────────────────
-// SECCIÓN: 4 SEMANAS — grilla 2x2 con bloques grandes
+// SECCIÓN: 4 SEMANAS — grilla 2x2
 // ─────────────────────────────────────────────
 function renderSemanas30(semanas, pgNum) {
   let html = headerSeccion("Plan de acción", "Plan 30 Días");
 
-  // Parsear objetivo y acción del texto de cada semana
   const parseSem = (texto) => {
     const mObj = texto.match(/Objetivo[:\s]+(.*?)(?:\.\s*Acci[oó]n|$)/i);
     const mAcc = texto.match(/Acci[oó]n[:\s]+(.*)/i);
@@ -260,14 +255,10 @@ function renderSemanas30(semanas, pgNum) {
   };
 
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">`;
-
   semanas.forEach((sem, i) => {
     const { objetivo, accion } = parseSem(sem.texto);
-    const esPar = i % 2 === 0;
-    const bgHeader = esPar ? NEGRO : ROJO;
-
+    const bgHeader = i % 2 === 0 ? NEGRO : ROJO;
     html += `<div style="border:1px solid #E0E0E0;border-radius:8px;overflow:hidden;">
-      <!-- Header de semana -->
       <div style="background:${bgHeader};padding:16px 20px;display:flex;align-items:center;gap:14px;">
         <div style="font-size:42px;font-weight:900;color:rgba(255,255,255,0.15);line-height:1;font-family:'Inter',Arial,sans-serif">${esc(sem.numero)}</div>
         <div>
@@ -275,14 +266,12 @@ function renderSemanas30(semanas, pgNum) {
           <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;font-family:'Inter',Arial,sans-serif">${objetivo ? esc(objetivo) : "Plan de ejecución"}</div>
         </div>
       </div>
-      <!-- Cuerpo -->
       <div style="padding:18px 20px;background:#FAFAFA;">
         <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:${ROJO};text-transform:uppercase;margin-bottom:8px;font-family:'Inter',Arial,sans-serif">ACCIÓN</div>
         <div style="font-size:17px;font-weight:400;color:${NEGRO};line-height:1.6;font-family:'Inter',Arial,sans-serif">${esc(accion || sem.texto)}</div>
       </div>
     </div>`;
   });
-
   html += `</div>`;
   return pagina(html, pgNum);
 }
@@ -292,59 +281,42 @@ function renderSemanas30(semanas, pgNum) {
 // ─────────────────────────────────────────────
 function renderContenido(ideas, pgNum) {
   let html = headerSeccion("Estrategia de contenido", "Contenido a Crear");
-  const COLORES_FONDO = ["#111111", "#C0392B", "#1a1a1a", "#8B0000", "#2c2c2c"];
+  const FONDOS = ["#111111", "#C0392B", "#1a1a1a", "#8B0000", "#2c2c2c"];
 
   ideas.forEach((idea, i) => {
-    const bgColor = COLORES_FONDO[i % COLORES_FONDO.length];
     html += `<div style="border-radius:8px;overflow:hidden;margin-bottom:16px;display:flex;min-height:90px;">
-      <!-- Franja lateral con número -->
-      <div style="background:${bgColor};width:70px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0;">
+      <div style="background:${FONDOS[i % FONDOS.length]};width:70px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0;">
         <span style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.5);text-transform:uppercase;font-family:'Inter',Arial,sans-serif">IDEA</span>
         <span style="font-size:32px;font-weight:900;color:#fff;line-height:1;font-family:'Inter',Arial,sans-serif">${esc(idea.numero)}</span>
       </div>
-      <!-- Cuerpo de la tarjeta -->
       <div style="flex:1;display:flex;flex-direction:column;border:1px solid #E0E0E0;border-left:none;border-radius:0 8px 8px 0;">
-        <!-- Gancho grande -->
         <div style="background:#F0F0F0;padding:14px 20px;border-bottom:1px solid #E0E0E0;">
           <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:${ROJO};text-transform:uppercase;margin-bottom:4px;font-family:'Inter',Arial,sans-serif">GANCHO</div>
           <div style="font-size:18px;font-weight:700;color:${NEGRO};font-style:italic;line-height:1.4;font-family:'Inter',Arial,sans-serif">"${esc(idea.gancho)}"</div>
         </div>
-        <!-- Tema y objetivo -->
         <div style="padding:12px 20px;background:#FAFAFA;flex:1;display:flex;gap:24px;">
-          ${idea.tema ? `<div style="flex:1;">
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:4px;font-family:'Inter',Arial,sans-serif">TEMA</div>
-            <div style="font-size:15px;color:${NEGRO};line-height:1.5;font-family:'Inter',Arial,sans-serif">${esc(idea.tema)}</div>
-          </div>` : ""}
-          ${idea.objetivo ? `<div style="flex:1;">
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:4px;font-family:'Inter',Arial,sans-serif">OBJETIVO</div>
-            <div style="font-size:15px;color:${NEGRO};line-height:1.5;font-family:'Inter',Arial,sans-serif">${esc(idea.objetivo)}</div>
-          </div>` : ""}
+          ${idea.tema ? `<div style="flex:1;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:4px;font-family:'Inter',Arial,sans-serif">TEMA</div><div style="font-size:15px;color:${NEGRO};line-height:1.5;font-family:'Inter',Arial,sans-serif">${esc(idea.tema)}</div></div>` : ""}
+          ${idea.objetivo ? `<div style="flex:1;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:4px;font-family:'Inter',Arial,sans-serif">OBJETIVO</div><div style="font-size:15px;color:${NEGRO};line-height:1.5;font-family:'Inter',Arial,sans-serif">${esc(idea.objetivo)}</div></div>` : ""}
         </div>
       </div>
     </div>`;
   });
-
   return pagina(html, pgNum);
 }
 
 // ─────────────────────────────────────────────
-// SECCIÓN: MENSAJES DE VENTA — editorial tipo autor
+// SECCIÓN: MENSAJES DE VENTA — editorial
 // ─────────────────────────────────────────────
 function renderMensajesVenta(mensajes, pgNum) {
   let html = headerSeccion("Comunicación comercial", "Mensajes de Venta");
-
   mensajes.forEach((msg, i) => {
     const esImpar = i % 2 !== 0;
     html += `<div style="margin-bottom:20px;position:relative;padding:32px 36px 28px 36px;background:${esImpar ? NEGRO : "#FAFAFA"};border-radius:8px;border:1px solid ${esImpar ? NEGRO : "#E0E0E0"};">
-      <!-- Comilla decorativa grande -->
       <div style="position:absolute;top:10px;left:22px;font-size:80px;font-weight:900;color:${ROJO};opacity:0.18;line-height:1;font-family:Georgia,serif;pointer-events:none;">"</div>
-      <!-- Número pequeño -->
       <div style="position:absolute;top:14px;right:20px;font-size:11px;font-weight:700;letter-spacing:2px;color:${esImpar ? "#555" : "#CCC"};font-family:'Inter',Arial,sans-serif">${String(i+1).padStart(2,"0")}</div>
-      <!-- Texto del mensaje -->
       <div style="font-size:20px;font-weight:500;color:${esImpar ? "#fff" : NEGRO};line-height:1.7;font-style:italic;font-family:'Inter',Arial,sans-serif;position:relative;z-index:1;padding-left:12px;">${esc(msg)}</div>
     </div>`;
   });
-
   return pagina(html, pgNum);
 }
 
@@ -353,7 +325,6 @@ function renderMensajesVenta(mensajes, pgNum) {
 // ─────────────────────────────────────────────
 function renderMetricas(metricas, pgNum) {
   let html = headerSeccion("Control y seguimiento", "Métricas a Monitorear");
-
   metricas.forEach((m, i) => {
     html += `<div style="background:#F4F4F4;border-left:5px solid ${ROJO};padding:22px 26px;border-radius:0 6px 6px 0;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
@@ -366,24 +337,18 @@ function renderMetricas(metricas, pgNum) {
       ${m.decision ? `<div style="font-size:17px;color:#444;line-height:1.55;font-family:'Inter',Arial,sans-serif"><strong style="color:${NEGRO}">Decisión a tomar:</strong> ${esc(m.decision)}</div>` : ""}
     </div>`;
   });
-
   return pagina(html, pgNum);
 }
 
 // ─────────────────────────────────────────────
-// SECCIÓN: SI / ENTONCES — diagrama de flujo real
+// SECCIÓN: SI / ENTONCES — diagrama de flujo
 // ─────────────────────────────────────────────
 function renderSiEntonces(items, pgNum) {
   let html = headerSeccion("Gestión de escenarios", "Si / Entonces");
-
   items.forEach((se, i) => {
     html += `<div style="margin-bottom:22px;">
-      <!-- Número de escenario -->
       <div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#CCC;text-transform:uppercase;margin-bottom:8px;font-family:'Inter',Arial,sans-serif">ESCENARIO ${String(i+1).padStart(2,"0")}</div>
-      <!-- Diagrama de flujo -->
       <div style="display:flex;align-items:stretch;gap:0;">
-        
-        <!-- CAJA SI -->
         <div style="flex:1;background:#F4F4F4;border:2px solid #E0E0E0;border-right:none;border-radius:8px 0 0 8px;padding:18px 20px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <div style="width:8px;height:8px;background:#999;border-radius:50%;flex-shrink:0;"></div>
@@ -391,17 +356,12 @@ function renderSiEntonces(items, pgNum) {
           </div>
           <div style="font-size:18px;font-weight:500;color:${NEGRO};line-height:1.5;font-family:'Inter',Arial,sans-serif">Si ${esc(se.condicion)}</div>
         </div>
-
-        <!-- FLECHA CENTRAL -->
         <div style="background:${ROJO};width:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;">
-          <!-- Flecha SVG -->
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span style="font-size:7px;letter-spacing:1px;color:rgba(255,255,255,0.6);text-transform:uppercase;font-family:'Inter',Arial,sans-serif">ENTONCES</span>
         </div>
-
-        <!-- CAJA ENTONCES -->
         <div style="flex:1;background:${NEGRO};border:2px solid ${NEGRO};border-left:none;border-radius:0 8px 8px 0;padding:18px 20px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <div style="width:8px;height:8px;background:${ROJO};border-radius:50%;flex-shrink:0;"></div>
@@ -409,11 +369,9 @@ function renderSiEntonces(items, pgNum) {
           </div>
           <div style="font-size:18px;font-weight:500;color:#fff;line-height:1.5;font-family:'Inter',Arial,sans-serif">${se.accion ? esc(se.accion) : "Ver plan de acción"}</div>
         </div>
-
       </div>
     </div>`;
   });
-
   return pagina(html, pgNum);
 }
 
@@ -423,7 +381,6 @@ function renderSiEntonces(items, pgNum) {
 function renderCierre(texto, pgNum) {
   let html = headerSeccion("Conclusión estratégica", "Cierre");
   html += `<div style="background:${NEGRO};padding:40px 44px;border-radius:8px;margin-top:8px;position:relative;overflow:hidden;">
-    <!-- Decoración geométrica de fondo -->
     <div style="position:absolute;right:-20px;bottom:-20px;width:180px;height:180px;border:3px solid rgba(192,57,43,0.2);border-radius:50%;"></div>
     <div style="position:absolute;right:20px;bottom:20px;width:100px;height:100px;border:3px solid rgba(192,57,43,0.15);border-radius:50%;"></div>
     <div style="font-size:22px;font-weight:400;color:#fff;line-height:1.85;font-family:'Inter',Arial,sans-serif;position:relative;z-index:1;">${esc(texto)}</div>
@@ -439,15 +396,15 @@ function generarHtmlPlan(data) {
   let paginas = [];
   let pg = 2;
 
-  if (s.mapaEjecutivo.length || s.prioridad)              paginas.push(renderMapaEjecutivo(s.mapaEjecutivo, s.prioridad, pg++));
-  if (s.dejarDeHacer.length || s.corregirPrimero.length)  paginas.push(renderDejarCorregir(s.dejarDeHacer, s.corregirPrimero, pg++));
-  if (s.dias7.length)                                      paginas.push(renderDias7(s.dias7, pg++));
-  if (s.semanas30.length)                                  paginas.push(renderSemanas30(s.semanas30, pg++));
-  if (s.contenido.length)                                  paginas.push(renderContenido(s.contenido, pg++));
+  if (s.mapaEjecutivo.length || s.prioridad)             paginas.push(renderMapaEjecutivo(s.mapaEjecutivo, s.prioridad, pg++));
+  if (s.dejarDeHacer.length || s.corregirPrimero.length) paginas.push(renderDejarCorregir(s.dejarDeHacer, s.corregirPrimero, pg++));
+  if (s.dias7.length)                                     paginas.push(renderDias7(s.dias7, pg++));
+  if (s.semanas30.length)                                 paginas.push(renderSemanas30(s.semanas30, pg++));
+  if (s.contenido.length)                                 paginas.push(renderContenido(s.contenido, pg++));
   if (s.mensajesVenta.length)                             paginas.push(renderMensajesVenta(s.mensajesVenta, pg++));
-  if (s.metricas.length)                                   paginas.push(renderMetricas(s.metricas, pg++));
-  if (s.siEntonces.length)                                 paginas.push(renderSiEntonces(s.siEntonces, pg++));
-  if (s.cierre)                                            paginas.push(renderCierre(s.cierre, pg++));
+  if (s.metricas.length)                                  paginas.push(renderMetricas(s.metricas, pg++));
+  if (s.siEntonces.length)                                paginas.push(renderSiEntonces(s.siEntonces, pg++));
+  if (s.cierre)                                           paginas.push(renderCierre(s.cierre, pg++));
 
   const portada = caratula(
     "Mapa de", "Ejecución",
@@ -458,11 +415,7 @@ function generarHtmlPlan(data) {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Inter','Helvetica Neue',Arial,sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    @page{margin:0;size:A4;}
-  </style>
+  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Inter','Helvetica Neue',Arial,sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}@page{margin:0;size:A4;}</style>
   </head><body>${portada}${paginas.join("")}</body></html>`;
 }
 
@@ -471,14 +424,14 @@ function generarHtmlPlan(data) {
 // ─────────────────────────────────────────────
 function parsearSeccionesDiag(texto) {
   const DEFS = [
-    { pat: /RESUMEN R[AÁ]PIDO/i,         kicker: "Visión general",        titulo: "Resumen Rápido" },
-    { pat: /PROBLEMA PRINCIPAL/i,         kicker: "Diagnóstico central",   titulo: "Problema Principal" },
-    { pat: /QU[EÉ] SIGNIFICA/i,           kicker: "Impacto en el negocio", titulo: "Qué Significa" },
-    { pat: /CAUSA REAL/i,                 kicker: "Raíz del bloqueo",      titulo: "Causa Real" },
-    { pat: /ACCI[OÓ]N CONCRETA/i,         kicker: "Hoja de ruta",          titulo: "Acción Concreta" },
-    { pat: /^IMPACTO/i,                   kicker: "Resultado esperado",     titulo: "Impacto" },
-    { pat: /CIERRE/i,                     kicker: "Conclusión",             titulo: "Cierre" },
-    { pat: /SIGUIENTE PASO|PRIMER NIVEL/i,kicker: "Próximo paso",           titulo: "Tu próximo paso" },
+    { pat: /RESUMEN R[AÁ]PIDO/i,          kicker: "Visión general",        titulo: "Resumen Rápido" },
+    { pat: /PROBLEMA PRINCIPAL/i,          kicker: "Diagnóstico central",   titulo: "Problema Principal" },
+    { pat: /QU[EÉ] SIGNIFICA/i,            kicker: "Impacto en el negocio", titulo: "Qué Significa" },
+    { pat: /CAUSA REAL/i,                  kicker: "Raíz del bloqueo",      titulo: "Causa Real" },
+    { pat: /ACCI[OÓ]N CONCRETA/i,          kicker: "Hoja de ruta",          titulo: "Acción Concreta" },
+    { pat: /^IMPACTO/i,                    kicker: "Resultado esperado",    titulo: "Impacto" },
+    { pat: /CIERRE/i,                      kicker: "Conclusión",            titulo: "Cierre" },
+    { pat: /SIGUIENTE PASO|PRIMER NIVEL/i, kicker: "Próximo paso",          titulo: "Tu próximo paso" },
   ];
   const lineas = texto.split("\n").map(l => l.trim()).filter(Boolean);
   const secciones = [];
@@ -490,8 +443,9 @@ function parsearSeccionesDiag(texto) {
     const limpia = linea.replace(/^[-—•]\s*/, "").trim();
     if (!limpia) continue;
     const esBullet = /^[-—•]/.test(linea);
-    if (esBullet) { sec.items.push({ tipo: "lista", texto: limpia }); }
-    else if (/problemacero\.com\.ar/i.test(limpia) || /bot[oó]n naranja/i.test(limpia)) {
+    if (esBullet) {
+      sec.items.push({ tipo: "lista", texto: limpia });
+    } else if (/problemacero\.com\.ar/i.test(limpia) || /bot[oó]n naranja/i.test(limpia)) {
       const last = sec.items[sec.items.length - 1];
       if (last && last.tipo === "cta") last.texto += " " + limpia;
       else sec.items.push({ tipo: "cta", titulo: "Este diagnóstico es solo el primer nivel", texto: limpia });
@@ -544,11 +498,7 @@ function generarHtmlDiagnostico(data) {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:'Inter','Helvetica Neue',Arial,sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    @page{margin:0;size:A4;}
-  </style>
+  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Inter','Helvetica Neue',Arial,sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}@page{margin:0;size:A4;}</style>
   </head><body>${portada}${paginas.join("")}</body></html>`;
 }
 
@@ -557,8 +507,17 @@ function generarHtmlDiagnostico(data) {
 // ─────────────────────────────────────────────
 async function htmlAPdf(html) {
   const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu","--font-render-hinting=none"],
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-software-rasterizer",
+      "--no-zygote",
+      "--single-process",
+    ],
   });
   try {
     const page = await browser.newPage();
