@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v3.3");
+  res.send("Motor PDF Problema Cero v3.4");
 });
 
 function limpiarTexto(texto) {
@@ -138,7 +138,8 @@ function procesarMarkdownAHTML(textoCrudo) {
       const tituloLimpio = matchTitulo[1].trim().toUpperCase();
 
       // SIEMPRE nueva página para cada sección
-      htmlResult += '<div class="page-break"></div><div class="seccion-wrapper">';
+      if (htmlResult) htmlResult += '</div>';
+      htmlResult += '<div class="page-break"></div><div class="seccion">';
 
       let kickerText = 'Lectura Estratégica';
       const titulos_decision = ["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"];
@@ -196,7 +197,7 @@ function procesarMarkdownAHTML(textoCrudo) {
   if (enLista) htmlResult += '</ul>';
   if (enCajaNaranja) htmlResult += '</div>';
   if (enCajaCierre) htmlResult += '</div></div>';
-  htmlResult += '</div>'; // cerrar último seccion-wrapper
+  if (htmlResult) htmlResult += '</div>';
 
   return htmlResult;
 }
@@ -238,7 +239,7 @@ function generarPlantillaPDF(textoDiagnostico) {
     }
     .logo-portada { width: 220px; margin-bottom: 40px; }
     .cover h1, .cover-interna h1 {
-      font-size: 40px;
+      font-size: 36px;
       color: var(--rojo);
       letter-spacing: 4px;
       font-weight: 700;
@@ -297,15 +298,21 @@ function generarPlantillaPDF(textoDiagnostico) {
 
     /* ── CONTENIDO ── */
     .page-content {
+      padding: 0;
+    }
+    .seccion {
       padding: 70px 80px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .page-break {
-      display: block;
-      page-break-after: always;
-      break-after: page;
+      page-break-before: always;
+      break-before: page;
       height: 0;
       margin: 0;
       padding: 0;
+      border: none;
+      display: block;
     }
 
     /* ── ENCABEZADOS DE SECCIÓN ── */
@@ -474,12 +481,6 @@ function generarPlantillaPDF(textoDiagnostico) {
       margin: 0 auto 36px auto;
       max-width: 80%;
     }
-    .seccion-wrapper {
-      display: block;
-      page-break-inside: avoid;
-      break-inside: avoid;
-      padding-bottom: 20px;
-    }
     .btn-premium {
       display: inline-block;
       background-color: var(--rojo);
@@ -535,7 +536,7 @@ app.post("/*", async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "0px", bottom: "72px", left: "0px", right: "0px" },
+      margin: { top: "20px", bottom: "72px", left: "0px", right: "0px" },
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
       footerTemplate: `<div style="font-size:11px;width:100%;color:#555555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><span style="font-weight:600;">PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
@@ -557,4 +558,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.3 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.4 activo en puerto ${PORT}`));
