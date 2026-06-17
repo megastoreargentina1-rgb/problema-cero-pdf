@@ -1,14 +1,29 @@
 const express = require("express");
 const cors = require("cors");
 const puppeteer = require("puppeteer");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.0");
+  res.send("Motor PDF Problema Cero v5.0");
 });
+
+// ─────────────────────────────────────────────
+// LOGO — ruta local del repositorio
+// ─────────────────────────────────────────────
+function getLogoBase64() {
+  try {
+    const logoPath = path.join(__dirname, "logo.png");
+    const data = fs.readFileSync(logoPath);
+    return "data:image/png;base64," + data.toString("base64");
+  } catch (e) {
+    return null;
+  }
+}
 
 function limpiarTexto(texto) {
   if (!texto) return "";
@@ -16,13 +31,17 @@ function limpiarTexto(texto) {
 }
 
 function sinMd(t) {
-  return String(t || "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1").trim();
+  return String(t || "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .trim();
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDERS VISUALES PREMIUM
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// RENDERS VISUALES
+// ─────────────────────────────────────────────
 function renderDias(dias) {
+  if (!dias.length) return "";
   let h = '<div class="timeline"><div class="timeline-rail"></div>';
   dias.forEach(d => {
     h += `<div class="tl-item">
@@ -35,11 +54,12 @@ function renderDias(dias) {
       </div>
     </div>`;
   });
-  return h + '</div>';
+  return h + "</div>";
 }
 
 function renderSemanas(sems) {
-  const BG = ['#0a0a0a', '#dc2626', '#1a1a1a', '#7f1d1d'];
+  if (!sems.length) return "";
+  const BG = ["#0a0a0a", "#dc2626", "#1a1a1a", "#7f1d1d"];
   let h = '<div class="semanas-grid">';
   sems.forEach((s, i) => {
     h += `<div class="sem-card">
@@ -47,7 +67,7 @@ function renderSemanas(sems) {
         <span class="sem-num-bg">${limpiarTexto(s.numero)}</span>
         <div class="sem-info">
           <span class="sem-label">SEMANA</span>
-          <span class="sem-obj">${limpiarTexto(s.objetivo || 'Ejecución')}</span>
+          <span class="sem-obj">${limpiarTexto(s.objetivo || "Ejecución")}</span>
         </div>
       </div>
       <div class="sem-body">
@@ -56,12 +76,14 @@ function renderSemanas(sems) {
       </div>
     </div>`;
   });
-  return h + '</div>';
+  return h + "</div>";
 }
 
 function renderIdeas(ideas) {
-  const BG = ['#0a0a0a', '#dc2626', '#1a1a1a', '#7f1d1d', '#2c2c2c'];
-  return ideas.map((idea, i) => `<div class="idea-card">
+  if (!ideas.length) return "";
+  const BG = ["#0a0a0a", "#dc2626", "#1a1a1a", "#7f1d1d", "#2c2c2c"];
+  return ideas.map((idea, i) => `
+  <div class="idea-card">
     <div class="idea-lat" style="background:${BG[i % BG.length]}">
       <span class="idea-lat-label">IDEA</span>
       <span class="idea-lat-num">${limpiarTexto(idea.numero)}</span>
@@ -72,16 +94,18 @@ function renderIdeas(ideas) {
         <div class="idea-gancho">"${limpiarTexto(idea.gancho)}"</div>
       </div>
       <div class="idea-meta">
-        ${idea.tema ? `<div class="idea-col"><div class="idea-col-label">TEMA</div><div class="idea-col-val">${limpiarTexto(idea.tema)}</div></div>` : ''}
-        ${idea.objetivo ? `<div class="idea-col"><div class="idea-col-label">OBJETIVO</div><div class="idea-col-val">${limpiarTexto(idea.objetivo)}</div></div>` : ''}
+        ${idea.tema ? `<div class="idea-col"><div class="idea-col-label">TEMA</div><div class="idea-col-val">${limpiarTexto(idea.tema)}</div></div>` : ""}
+        ${idea.objetivo ? `<div class="idea-col"><div class="idea-col-label">OBJETIVO</div><div class="idea-col-val">${limpiarTexto(idea.objetivo)}</div></div>` : ""}
       </div>
     </div>
-  </div>`).join('');
+  </div>`).join("");
 }
 
 function renderSiEntonces(items) {
-  return items.map((se, i) => `<div class="se-bloque">
-    <div class="se-num">ESCENARIO ${String(i + 1).padStart(2, '0')}</div>
+  if (!items.length) return "";
+  return items.map((se, i) => `
+  <div class="se-bloque">
+    <div class="se-num">ESCENARIO ${String(i + 1).padStart(2, "0")}</div>
     <div class="se-flujo">
       <div class="se-si">
         <div class="se-si-label">CONDICIÓN</div>
@@ -95,264 +119,194 @@ function renderSiEntonces(items) {
       </div>
       <div class="se-entonces">
         <div class="se-entonces-label">ACCIÓN</div>
-        <div class="se-entonces-texto">${limpiarTexto(se.accion) || 'Ver plan'}</div>
+        <div class="se-entonces-texto">${limpiarTexto(se.accion) || "Ver plan"}</div>
       </div>
     </div>
-  </div>`).join('');
+  </div>`).join("");
 }
 
 function renderMensajes(msjs) {
+  if (!msjs.length) return "";
   return msjs.map((m, i) => {
     const osc = i % 2 !== 0;
-    return `<div class="msj-card ${osc ? 'msj-osc' : 'msj-cla'}">
+    return `<div class="msj-card ${osc ? "msj-osc" : "msj-cla"}">
       <div class="msj-comilla">"</div>
-      <div class="msj-num">${String(i + 1).padStart(2, '0')}</div>
+      <div class="msj-num">${String(i + 1).padStart(2, "0")}</div>
       <div class="msj-texto">${limpiarTexto(m)}</div>
     </div>`;
-  }).join('');
+  }).join("");
 }
 
-function renderMetricas(metricas) {
-  return metricas.map((m, i) => `<div class="metrica-card">
+function renderMetricas(items) {
+  if (!items.length) return "";
+  return items.map((m, i) => `
+  <div class="metrica-card">
     <div class="metrica-badge">${i + 1}</div>
     <div class="metrica-body">
       <div class="metrica-que">${limpiarTexto(m.que)}</div>
-      ${m.porQue ? `<div class="metrica-row"><span class="metrica-label">POR QUÉ IMPORTA</span><div class="metrica-val">${limpiarTexto(m.porQue)}</div></div>` : ''}
-      ${m.decision ? `<div class="metrica-row"><span class="metrica-label">QUÉ DECISIÓN TOMAR</span><div class="metrica-val">${limpiarTexto(m.decision)}</div></div>` : ''}
+      ${m.porQue ? `<div class="metrica-row"><span class="metrica-label">POR QUÉ IMPORTA</span><div class="metrica-val">${limpiarTexto(m.porQue)}</div></div>` : ""}
+      ${m.decision ? `<div class="metrica-row"><span class="metrica-label">QUÉ DECISIÓN TOMAR</span><div class="metrica-val">${limpiarTexto(m.decision)}</div></div>` : ""}
     </div>
-  </div>`).join('');
+  </div>`).join("");
 }
 
-// ─────────────────────────────────────────────────────────────
-// PARSER PRINCIPAL
-// ─────────────────────────────────────────────────────────────
-function procesarMarkdownAHTML(textoCrudo) {
-  const textoSeguro = limpiarTexto(textoCrudo);
-  const lineas = textoSeguro.split('\n');
-  let htmlResult = '';
+// ─────────────────────────────────────────────
+// PARSER — convierte texto Gemini en secciones HTML
+// Cada sección = div independiente con page-break
+// ─────────────────────────────────────────────
+function parsearTexto(textoCrudo) {
+  // Escapar HTML
+  const texto = textoCrudo
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  const lineas = texto.split("\n");
+  const secciones = []; // Array de { titulo, kicker, html }
+  let seccionActual = null;
   let enLista = false;
-  let ignorarResto = false;
-  let enCajaCierre = false;
-  let enCajaNaranja = false;
 
-  // Buffers para secciones visuales
-  let diasBuffer = [];
-  let semanasBuffer = [];
-  let ideasBuffer = [];
-  let ideaActual = null;
-  let siEntoncesBuffer = [];
-  let mensajesBuffer = [];
-  let metricasBuffer = [];
-  let metricaActual = null;
+  // Buffers visuales
+  let diasBuf = [], semanasBuf = [], ideasBuf = [], siEntoncesBuf = [];
+  let mensajesBuf = [], metricasBuf = [];
+  let ideaActual = null, metricaActual = null;
 
-  let enDias = false;
-  let enSemanas = false;
-  let enIdeas = false;
-  let enSiEntonces = false;
-  let enMensajes = false;
-  let enMetricas = false;
+  let enDias = false, enSemanas = false, enIdeas = false;
+  let enSiEntonces = false, enMensajes = false, enMetricas = false;
 
-  const prefijosIgnorar = [
+  // Líneas a ignorar completamente
+  const IGNORAR = [
     "CASO DEL CLIENTE:", "EL NEGOCIO:", "EL PROBLEMA ELEGIDO",
     "LAS BASES DEL NEGOCIO:", "EL PUNTO DE BLOQUEO:", "EL OBJETIVO A 90",
-    "ANÁLISIS INICIAL:", "ANÁLISIS ESTRATÉGICO:", "MAPA DE EJECUCIÓN",
+    "ANÁLISIS INICIAL:", "ANÁLISIS ESTRATÉGICO:", "ANÁLISIS COMPLETO:",
     "CASO ORIGINAL:", "RECURSOS DISPONIBLES", "FEEDBACK DEL USUARIO:",
-    "ANÁLISIS COMPLETO\n", "DIAGNÓSTICO:", "DIAGNÓSTICO INICIAL:",
     "Aquí tienes el análisis", "🚀 Etapa privada", "🧠 Para armar",
     "🔎 Feedback", "Del 1 al 10", "El resultado depende",
-    "¿Tenés más TIEMPO", "¿Este análisis", "¿Qué punto específico"
+    "¿Tenés más TIEMPO", "¿Este análisis", "¿Qué punto específico",
+    "Logo Problema Cero"
   ];
 
+  // Títulos reconocidos
+  const RX_TITULO = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBER[ÍI]A CREAR|MENSAJES DE VENTA.*|M[ÉE]TRICA.*MIRAR|SI\s*\/\s*ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCI[ÓO]N CONCRETA|IMPACTO|CIERRE)$/i;
+
+  // CTA de cierre
+  const RX_CTA = /ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL/i;
+  const RX_CTA2 = /TU SIGUIENTE NIVEL/i;
+
+  let ignorarResto = false;
   let contenidoEmpezado = false;
-  let saltarLinea = false;
 
-  // ── REGEX para detectar cada sección ─────────────────────
-  const RX_TITULO = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN[^a-z]*|CONTENIDO QUE DEBER[ÍI]A CREAR|MENSAJES DE VENTA[^a-z]*|M[ÉE]TRICA QUE DEBER[ÍI]A MIRAR|SI\s*\/\s*ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCI[ÓO]N CONCRETA|IMPACTO|CIERRE)$/i;
-
-  // ── DETECTORES de sección por contenido ─────────────────
-  function esTitulo7dias(t) {
-    return /7\s*D[ÍI]AS/i.test(t) || (/PLAN DE ACCI[ÓO]N/i.test(t) && !/30/i.test(t));
+  function kicKerPara(titulo) {
+    const t = titulo.toUpperCase();
+    if (/RESUMEN|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|IMPACTO|CIERRE/.test(t)) return "Lectura Estratégica";
+    if (/MAPA EJECUTIVO|PRIORIDAD|DEJAR|CORREGIR|SI.*ENTONCES/.test(t)) return "Arquitectura de Decisiones";
+    if (/PLAN.*7|PLAN.*30|PLAN DE ACCIÓN/.test(t)) return "Plan de Ejecución";
+    if (/CONTENIDO|MENSAJES|MÉTRICA|METRICA/.test(t)) return "Ejecución Comercial";
+    if (/ACCIÓN CONCRETA/.test(t)) return "Próximos Pasos";
+    return "Análisis Estratégico";
   }
-  function esTitulo30dias(t) {
-    return /30\s*D[ÍI]AS/i.test(t) || (/PLAN DE ACCI[ÓO]N/i.test(t) && /30/i.test(t));
-  }
-  function esTituloIdeas(t)      { return /CONTENIDO QUE DEBER/i.test(t); }
-  function esTituloSiEntonces(t) { return /SI\s*\/\s*ENTONCES/i.test(t); }
-  function esTituloMensajes(t)   { return /MENSAJES DE VENTA/i.test(t); }
-  function esTituloMetricas(t)   { return /M[ÉE]TRICA/i.test(t); }
 
   function volcarBuffers() {
-    if (enDias && diasBuffer.length) {
-      htmlResult += renderDias(diasBuffer);
-      diasBuffer = []; enDias = false;
+    if (!seccionActual) return;
+    if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
+
+    if (enDias && diasBuf.length) {
+      seccionActual.html += renderDias(diasBuf);
+      diasBuf = []; enDias = false;
     }
-    if (enSemanas && semanasBuffer.length) {
-      htmlResult += renderSemanas(semanasBuffer);
-      semanasBuffer = []; enSemanas = false;
+    if (enSemanas && semanasBuf.length) {
+      seccionActual.html += renderSemanas(semanasBuf);
+      semanasBuf = []; enSemanas = false;
     }
     if (enIdeas) {
-      if (ideaActual) { ideasBuffer.push(ideaActual); ideaActual = null; }
-      if (ideasBuffer.length) { htmlResult += renderIdeas(ideasBuffer); ideasBuffer = []; }
+      if (ideaActual) { ideasBuf.push(ideaActual); ideaActual = null; }
+      if (ideasBuf.length) { seccionActual.html += renderIdeas(ideasBuf); ideasBuf = []; }
       enIdeas = false;
     }
-    if (enSiEntonces && siEntoncesBuffer.length) {
-      htmlResult += renderSiEntonces(siEntoncesBuffer);
-      siEntoncesBuffer = []; enSiEntonces = false;
+    if (enSiEntonces && siEntoncesBuf.length) {
+      seccionActual.html += renderSiEntonces(siEntoncesBuf);
+      siEntoncesBuf = []; enSiEntonces = false;
     }
-    if (enMensajes && mensajesBuffer.length) {
-      htmlResult += renderMensajes(mensajesBuffer);
-      mensajesBuffer = []; enMensajes = false;
+    if (enMensajes && mensajesBuf.length) {
+      seccionActual.html += renderMensajes(mensajesBuf);
+      mensajesBuf = []; enMensajes = false;
     }
     if (enMetricas) {
-      if (metricaActual) { metricasBuffer.push(metricaActual); metricaActual = null; }
-      if (metricasBuffer.length) { htmlResult += renderMetricas(metricasBuffer); metricasBuffer = []; }
+      if (metricaActual) { metricasBuf.push(metricaActual); metricaActual = null; }
+      if (metricasBuf.length) { seccionActual.html += renderMetricas(metricasBuf); metricasBuf = []; }
       enMetricas = false;
     }
   }
 
+  function nuevaSeccion(titulo) {
+    volcarBuffers();
+    if (seccionActual) secciones.push(seccionActual);
+    seccionActual = { titulo, kicker: kicKerPara(titulo), html: "" };
+
+    const t = titulo.toUpperCase();
+    enDias       = /PLAN.*7|PRÓXIMOS 7/.test(t) || (/PLAN DE ACCIÓN/.test(t) && !/30/.test(t));
+    enSemanas    = /PLAN.*30|PRÓXIMOS 30/.test(t) || (/PLAN DE ACCIÓN/.test(t) && /30/.test(t));
+    enIdeas      = /CONTENIDO QUE DEBER/.test(t);
+    enSiEntonces = /SI.*ENTONCES/.test(t);
+    enMensajes   = /MENSAJES DE VENTA/.test(t);
+    enMetricas   = /M[ÉE]TRICA/.test(t);
+  }
+
   lineas.forEach(linea => {
     if (ignorarResto) return;
-
-    let limpia = linea.trim();
+    const limpia = linea.trim();
     if (!limpia) return;
+    if (limpia.match(/^━+$/) || limpia.match(/^═+$/)) return;
+    if (IGNORAR.some(p => limpia.startsWith(p))) return;
 
-    if (prefijosIgnorar.some(p => limpia.startsWith(p))) {
-      saltarLinea = true;
-      return;
-    }
-
-    const matchT = limpia.match(RX_TITULO);
-    if (matchT) { contenidoEmpezado = true; saltarLinea = false; }
-    if (saltarLinea && !contenidoEmpezado) return;
-    if (!contenidoEmpezado && /^\d+\./.test(limpia)) return;
-    if (!contenidoEmpezado && limpia.length < 80 && !matchT) return;
-
-    if (limpia.includes("━━━━━━━━━━━━━━━━━━━━") || limpia === "•") {
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      return;
-    }
-
-    // ── CARÁTULA INTERNA (Plan de Ejecución) ─────────────
-    if (limpia === "ANÁLISIS COMPLETO:") {
+    // CTA de cierre — sección especial
+    if (RX_CTA.test(limpia) || RX_CTA2.test(limpia)) {
       volcarBuffers();
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
-      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-      htmlResult += `<div class="page-break"></div>
-        <div class="cover-interna">
-          <div class="cover-logo-svg">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100" height="100">
-              <rect width="120" height="120" fill="#1a1a1a" rx="8"/>
-              <text x="60" y="70" text-anchor="middle" font-family="Georgia,serif" font-size="60" fill="white" font-weight="bold">P</text>
-              <line x1="25" y1="82" x2="95" y2="82" stroke="#dc2626" stroke-width="4"/>
-              <text x="60" y="100" text-anchor="middle" font-family="Georgia,serif" font-size="14" fill="#dc2626" letter-spacing="4">0</text>
-            </svg>
-          </div>
-          <h1>PROBLEMA CERO</h1>
-          <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
-          <div class="diag-title">Mapa de <span class="rojo">Ejecución</span></div>
-          <div class="private">DOCUMENTO EJECUTIVO</div>
-          <div class="description">Un plan de acción diseñado para corregir la raíz del problema, ordenar prioridades absolutas y escalar el negocio en los próximos 30 días.</div>
-        </div>`;
+      if (seccionActual) secciones.push(seccionActual);
+      seccionActual = { titulo: "CTA", kicker: "", html: "", esCTA: true };
+      return;
+    }
+
+    // ── Detectar título de sección ────────────────────────
+    const mT = limpia.match(RX_TITULO);
+    if (mT) {
       contenidoEmpezado = true;
+      nuevaSeccion(mT[1].trim().toUpperCase());
       return;
     }
 
-    // ── CTA DIAGNÓSTICO ───────────────────────────────────
-    if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
-      volcarBuffers();
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
-      enCajaCierre = true;
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += '<div class="contenedor-cierre"><div class="caja-premium-cierre">';
-      htmlResult += '<h2 class="cierre-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>';
-      return;
-    }
+    if (!contenidoEmpezado) return;
+    if (!seccionActual) return;
 
-    // ── CTA PLAN ──────────────────────────────────────────
-    if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PUNTO DE PARTIDA") ||
-        limpia.includes("TU SIGUIENTE NIVEL DE EJECUCIÓN") ||
-        limpia.includes("TU SIGUIENTE NIVEL:")) {
-      volcarBuffers();
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
-      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += `<div class="contenedor-cierre"><div class="black-box-cta">
-        <h3>TU SIGUIENTE NIVEL DE EJECUCIÓN</h3>
-        <p>Detectar el bloqueo es vital, pero la transformación ocurre en la acción.</p>
-        <a href="https://problemacero.com.ar" class="btn-premium">DESBLOQUEAR RUTA DE 30 DÍAS</a>
-      </div></div>`;
-      ignorarResto = true;
-      return;
-    }
-
-    // ── TU PRÓXIMO PASO ───────────────────────────────────
-    if (limpia.includes("TU PRÓXIMO PASO:")) {
-      volcarBuffers();
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      htmlResult += '<div class="caja-cta-blanca"><p class="cta-titulo">TU PRÓXIMO PASO:</p>';
-      enCajaNaranja = true;
-      return;
-    }
-
-    // ── TÍTULOS PRINCIPALES ───────────────────────────────
-    if (matchT) {
-      volcarBuffers();
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
-      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-
-      const tituloLimpio = matchT[1].trim().toUpperCase();
-
-      // Activar banderas según sección
-      enDias       = esTitulo7dias(tituloLimpio);
-      enSemanas    = esTitulo30dias(tituloLimpio);
-      enIdeas      = esTituloIdeas(tituloLimpio);
-      enSiEntonces = esTituloSiEntonces(tituloLimpio);
-      enMensajes   = esTituloMensajes(tituloLimpio);
-      enMetricas   = esTituloMetricas(tituloLimpio);
-
-      // Kicker según sección
-      let kickerText = 'Lectura Estratégica';
-      if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
-      else if (["CONTENIDO QUE DEBERÍA CREAR","MENSAJES DE VENTA","MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
-      else if (esTitulo7dias(tituloLimpio) || esTitulo30dias(tituloLimpio)) kickerText = 'Arquitectura de Decisiones';
-
-      // SALTO DE PÁGINA antes de cada sección
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += `<div class="editorial-header">
-        <div class="kicker">${kickerText}</div>
-        <h2 class="editorial-title">${tituloLimpio}</h2>
-        <div class="titulo-linea"></div>
-      </div>`;
-      return;
-    }
-
-    // ── SUBTÍTULOS (👉) ───────────────────────────────────
-    if (limpia.startsWith('👉')) {
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      htmlResult += `<p class="subtitulo-seccion">${sinMd(limpia.replace('👉', '').trim())}</p>`;
+    // ── Subtítulos 👉 ─────────────────────────────────────
+    if (limpia.startsWith("👉")) {
+      if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
+      const sub = sinMd(limpia.replace(/^👉\s*/, ""));
+      if (sub.toLowerCase().startsWith("tu problema principal")) {
+        seccionActual.html += `<div class="resumen-label">Tu problema principal:</div><div class="resumen-valor">${limpiarTexto(sub.replace(/^tu problema principal[:\s]*/i, ""))}</div>`;
+      } else if (sub.toLowerCase().startsWith("qué está pasando") || sub.toLowerCase().startsWith("que está pasando")) {
+        seccionActual.html += `<div class="resumen-label">Qué está pasando:</div>`;
+      } else if (sub.toLowerCase().startsWith("qué deberías corregir") || sub.toLowerCase().startsWith("que deberías corregir")) {
+        seccionActual.html += `<div class="resumen-label">Qué deberías corregir primero:</div>`;
+      } else {
+        seccionActual.html += `<p class="subtitulo-seccion">${limpiarTexto(sub)}</p>`;
+      }
       return;
     }
 
     // ── CAPTURA DÍAS ──────────────────────────────────────
-    // Detecta: "- **Día 1:** texto", "Día 1: texto", "**Día 1:** texto"
     if (enDias) {
       const m = limpia.match(/^[-—*]?\s*\*{0,2}D[ií]a\s*(\d+)\*{0,2}[:\s]+(.+)/i);
-      if (m) { diasBuffer.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
+      if (m) { diasBuf.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
     }
 
     // ── CAPTURA SEMANAS ───────────────────────────────────
-    // Detecta: "- **Semana 1:** **Objetivo:** texto **Acción:** texto"
     if (enSemanas) {
       const m = limpia.match(/^[-—*]?\s*\*{0,2}Semana\s*(\d+)\*{0,2}[:\s]+(.+)/i);
       if (m) {
         const resto = sinMd(m[2]);
         const mObj = resto.match(/Objetivo[:\s]+([^.]+?)(?:\s+Acci[oó]n|$)/i);
         const mAcc = resto.match(/Acci[oó]n[:\s]+(.+)/i);
-        semanasBuffer.push({
+        semanasBuf.push({
           numero: m[1],
           objetivo: mObj ? mObj[1].trim() : resto.substring(0, 60),
           accion: mAcc ? mAcc[1].trim() : resto
@@ -363,101 +317,133 @@ function procesarMarkdownAHTML(textoCrudo) {
 
     // ── CAPTURA IDEAS ─────────────────────────────────────
     if (enIdeas) {
+      // Detecta gancho directo en bullet: "- **Gancho:** texto"
+      const mG = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
+      const mT2 = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
+      const mO = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
       const mNum = limpia.match(/^[-—*]?\s*\*{0,2}Idea\s*(\d+)\*{0,2}[:\s]*$/i);
-      const mG   = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
-      const mT   = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
-      const mO   = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
+
       if (mNum) {
-        if (ideaActual) ideasBuffer.push(ideaActual);
-        ideaActual = { numero: mNum[1], gancho: '', tema: '', objetivo: '' };
+        if (ideaActual) ideasBuf.push(ideaActual);
+        ideaActual = { numero: mNum[1], gancho: "", tema: "", objetivo: "" };
         return;
       }
-      // Gancho también puede estar en la misma línea que "- **Idea 1:**" como bullet con "Gancho:"
       if (mG) {
-        if (!ideaActual) ideaActual = { numero: String(ideasBuffer.length + 1), gancho: '', tema: '', objetivo: '' };
-        ideaActual.gancho = sinMd(mG[1]); return;
+        if (!ideaActual) ideaActual = { numero: String(ideasBuf.length + 1), gancho: "", tema: "", objetivo: "" };
+        ideaActual.gancho = sinMd(mG[1]);
+        return;
       }
-      if (mT && ideaActual) { ideaActual.tema     = sinMd(mT[1]); return; }
-      if (mO && ideaActual) { ideaActual.objetivo = sinMd(mO[1]); return; }
+      if (mT2 && ideaActual) { ideaActual.tema = sinMd(mT2[1]); return; }
+      if (mO && ideaActual) {
+        ideaActual.objetivo = sinMd(mO[1]);
+        // Auto-push cuando tenemos los 3 campos
+        if (ideaActual.gancho && ideaActual.tema && ideaActual.objetivo) {
+          ideasBuf.push(ideaActual);
+          ideaActual = null;
+        }
+        return;
+      }
     }
 
     // ── CAPTURA SI/ENTONCES ───────────────────────────────
     if (enSiEntonces) {
-      // Detecta: "- **Si** condición, **entonces** acción"
       const m = limpia.match(/^[-—*]?\s*\*{0,2}Si\*{0,2}\s+(.*?),?\s+\*{0,2}entonces\*{0,2}\s+(.*)/i);
-      if (m) { siEntoncesBuffer.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
+      if (m) { siEntoncesBuf.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
     }
 
     // ── CAPTURA MENSAJES ──────────────────────────────────
     if (enMensajes) {
-      // Detecta: - "texto" o - "texto"
       const m1 = limpia.match(/^[-—*]?\s*[""""](.+)[""""]/);
-      if (m1) { mensajesBuffer.push(sinMd(m1[1])); return; }
-      // Detecta línea que empieza con guión y tiene texto largo
-      if ((limpia.startsWith('- ') || limpia.startsWith('— ')) && limpia.length > 12) {
-        const msg = limpia.substring(2).replace(/^[""""]/,'').replace(/[""""]\s*$/,'').trim();
-        if (msg.length > 10) { mensajesBuffer.push(sinMd(msg)); return; }
+      if (m1) { mensajesBuf.push(sinMd(m1[1])); return; }
+      if (limpia.startsWith("- ") || limpia.startsWith("— ")) {
+        const msg = limpia.substring(2).replace(/^[""""]/,"").replace(/[""""]\s*$/,"").trim();
+        if (msg.length > 10) { mensajesBuf.push(sinMd(msg)); return; }
       }
     }
 
     // ── CAPTURA MÉTRICAS ──────────────────────────────────
     if (enMetricas) {
-      const mQue  = limpia.match(/\*{0,2}Qué mirar\*{0,2}[:\s]+(.+)/i);
-      const mMet  = limpia.match(/^[-—*]?\s*\*{0,2}Métrica\*{0,2}[:\s]+(.+)/i);
-      const mPorQ = limpia.match(/\*{0,2}Por qué importa\*{0,2}[:\s]+(.+)/i);
-      const mDec  = limpia.match(/\*{0,2}Qué decisión tomar\*{0,2}[:\s]+(.+)/i);
-
-      if (mQue || mMet) {
-        if (metricaActual) metricasBuffer.push(metricaActual);
-        metricaActual = { que: sinMd((mQue || mMet)[1]), porQue: '', decision: '' };
+      const mQue = limpia.match(/\*{0,2}(?:Qué mirar|Métrica)\*{0,2}[:\s]+(.+)/i);
+      const mPQ  = limpia.match(/\*{0,2}Por qué importa\*{0,2}[:\s]+(.+)/i);
+      const mDec = limpia.match(/\*{0,2}Qué decisión tomar\*{0,2}[:\s]+(.+)/i);
+      if (mQue) {
+        if (metricaActual) metricasBuf.push(metricaActual);
+        metricaActual = { que: sinMd(mQue[1]), porQue: "", decision: "" };
         return;
       }
-      if (mPorQ) {
-        if (!metricaActual) metricaActual = { que: '', porQue: '', decision: '' };
-        metricaActual.porQue = sinMd(mPorQ[1]); return;
-      }
-      if (mDec) {
-        if (!metricaActual) metricaActual = { que: '', porQue: '', decision: '' };
-        metricaActual.decision = sinMd(mDec[1]); return;
-      }
+      if (mPQ && metricaActual) { metricaActual.porQue = sinMd(mPQ[1]); return; }
+      if (mDec && metricaActual) { metricaActual.decision = sinMd(mDec[1]); return; }
     }
 
     // ── LISTAS NORMALES ───────────────────────────────────
-    if (limpia.startsWith('- ') || limpia.startsWith('* ') || limpia.startsWith('— ')) {
+    if (limpia.startsWith("- ") || limpia.startsWith("* ") || limpia.startsWith("— ")) {
       if (!enLista) {
-        htmlResult += enCajaCierre ? '<ul class="cierre-list">' : '<ul class="editorial-list">';
+        seccionActual.html += '<ul class="editorial-list">';
         enLista = true;
       }
-      htmlResult += `<li class="list-item">${limpia.substring(2).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`;
+      const itemTexto = limpia.substring(2).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      seccionActual.html += `<li class="list-item">${itemTexto}</li>`;
       return;
     } else if (enLista) {
-      htmlResult += '</ul>';
+      seccionActual.html += "</ul>";
       enLista = false;
     }
 
-    // ── PÁRRAFOS ──────────────────────────────────────────
-    if (!limpia.startsWith('<')) {
-      const p = limpia.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      if (enCajaNaranja)     htmlResult += `<p class="cta-texto">${p}</p>`;
-      else if (enCajaCierre) htmlResult += `<p class="texto-cierre">${p}</p>`;
-      else                   htmlResult += `<p class="texto-editorial">${p}</p>`;
+    // ── PÁRRAFO NORMAL ────────────────────────────────────
+    if (!limpia.startsWith("<")) {
+      const p = limpia.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      seccionActual.html += `<p class="texto-editorial">${p}</p>`;
     }
   });
 
-  // Volcar lo que quedó pendiente
+  // Volcar lo último
   volcarBuffers();
-  if (enLista) htmlResult += '</ul>';
-  if (enCajaNaranja) htmlResult += '</div>';
-  if (enCajaCierre) htmlResult += '</div></div>';
+  if (seccionActual) secciones.push(seccionActual);
 
-  return htmlResult;
+  return secciones;
 }
 
-// ─────────────────────────────────────────────────────────────
-// PLANTILLA HTML+CSS COMPLETA
-// ─────────────────────────────────────────────────────────────
-function generarPlantillaPDF(textoDiagnostico) {
-  const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
+// ─────────────────────────────────────────────
+// GENERAR HTML COMPLETO
+// ─────────────────────────────────────────────
+function generarHTML(texto) {
+  const logoBase64 = getLogoBase64();
+  const logoTag = logoBase64
+    ? `<img src="${logoBase64}" alt="Problema Cero" class="logo-portada">`
+    : `<div class="logo-fallback">P<span>0</span></div>`;
+
+  const secciones = parsearTexto(texto);
+
+  // Construir páginas de contenido
+  let paginasHTML = "";
+  secciones.forEach(sec => {
+    if (sec.esCTA) {
+      paginasHTML += `
+      <div class="pagina pagina-cta">
+        <div class="cta-inner">
+          <h2 class="cta-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>
+          <p class="cta-desc">Detectar el problema es importante. Pero el cambio aparece cuando sabés qué corregir primero, qué dejar de hacer y cómo ordenar los próximos pasos.</p>
+          <div class="cta-box">
+            <div class="cta-box-label">TU PRÓXIMO PASO:</div>
+            <p class="cta-box-texto">Volvé a la pestaña de la web <strong>problemacero.com.ar</strong> y tocá el botón para desbloquear tu Análisis Completo ahora mismo.</p>
+          </div>
+        </div>
+      </div>`;
+      return;
+    }
+
+    paginasHTML += `
+    <div class="pagina pagina-contenido">
+      <div class="editorial-header">
+        <div class="kicker">${limpiarTexto(sec.kicker)}</div>
+        <h2 class="editorial-title">${limpiarTexto(sec.titulo)}</h2>
+        <div class="titulo-linea"></div>
+      </div>
+      <div class="editorial-body">
+        ${sec.html}
+      </div>
+    </div>`;
+  });
 
   return `<!DOCTYPE html>
 <html>
@@ -465,441 +451,185 @@ function generarPlantillaPDF(textoDiagnostico) {
   <meta charset="utf-8">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root { --rojo: #dc2626; --negro: #0a0a0a; --texto: #111111; }
+    :root { --rojo: #dc2626; --negro: #0a0a0a; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; color: var(--texto); background: #fff; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111; }
 
-    /* ── CARÁTULA PRINCIPAL ─────────────────── */
-    .cover, .cover-interna {
-      height: 100vh;
+    /* ── CADA PÁGINA ES UN DIV INDEPENDIENTE ── */
+    .pagina {
+      width: 210mm;
+      min-height: 297mm;
+      page-break-after: always;
+      break-after: page;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── CARÁTULA ─────────────────────────── */
+    .pagina-caratula {
+      background: var(--negro);
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       text-align: center;
-      background-color: var(--negro);
-      color: #fff;
-      padding: 60px;
-      page-break-after: always;
-    }
-    .cover-logo-svg { margin-bottom: 32px; }
-    .cover h1, .cover-interna h1 {
-      font-size: 36px;
-      color: var(--rojo);
-      letter-spacing: 4px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .cover .subtitle, .cover-interna .subtitle {
-      font-size: 16px;
-      font-weight: 300;
-      color: #d1d5db;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-    .cover .private, .cover-interna .private {
-      font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-      letter-spacing: 5px;
-      text-transform: uppercase;
-      margin-bottom: 44px;
-    }
-    .cover .diag-title, .cover-interna .diag-title {
-      font-size: 58px;
-      font-weight: 300;
-      line-height: 1.15;
-      margin-bottom: 36px;
+      padding: 60px 70px;
       color: #fff;
     }
-    .rojo { color: var(--rojo); font-weight: 700; }
-    .cover .description, .cover-interna .description {
-      font-size: 20px;
-      color: #9ca3af;
-      max-width: 580px;
-      border-top: 1px solid #334155;
-      border-bottom: 1px solid #334155;
-      padding: 22px 0;
-      line-height: 1.7;
-      font-weight: 300;
-    }
-    .cover-footer { margin-top: 44px; text-align: center; }
-    .cover-footer .label {
-      font-size: 11px;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-    .cover-footer .value { font-size: 20px; color: #fff; font-weight: 400; }
-
-    /* ── CONTENIDO ──────────────────────────── */
-    .page-content { padding: 72px 84px; }
-
-    /* SALTO DE PÁGINA — cada sección nueva */
-    .page-break {
-      page-break-before: always;
-      break-before: page;
-      height: 1px;
-    }
-
-    /* ── HEADERS DE SECCIÓN ─────────────────── */
-    .editorial-header { margin-bottom: 36px; padding-top: 8px; }
-    .kicker {
-      font-size: 11px;
-      color: var(--rojo);
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .editorial-title {
-      color: #111;
-      font-size: 38px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-    .titulo-linea {
-      width: 52px;
-      height: 5px;
-      background: var(--rojo);
+    .logo-portada { width: 160px; margin-bottom: 32px; }
+    .logo-fallback {
+      width: 100px; height: 100px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 52px; font-weight: 900; color: #fff;
       margin-bottom: 32px;
     }
+    .logo-fallback span { color: var(--rojo); }
+    .caratula-brand { font-size: 22px; font-weight: 900; letter-spacing: 6px; color: var(--rojo); margin-bottom: 6px; }
+    .caratula-sub { font-size: 11px; letter-spacing: 3px; color: #888; margin-bottom: 4px; }
+    .caratula-tag { font-size: 10px; letter-spacing: 5px; color: #555; margin-bottom: 48px; }
+    .caratula-titulo { font-size: 62px; font-weight: 300; color: #fff; line-height: 1.1; margin-bottom: 36px; }
+    .caratula-divider { width: 100%; height: 1px; background: linear-gradient(to right, transparent, #444, transparent); margin: 20px 0; }
+    .caratula-desc { font-size: 18px; color: #aaa; line-height: 1.7; font-weight: 300; max-width: 520px; }
+    .caratula-firma { margin-top: 36px; }
+    .caratula-firma-label { font-size: 9px; letter-spacing: 4px; color: #555; margin-bottom: 6px; }
+    .caratula-firma-name { font-size: 20px; color: #fff; font-weight: 400; }
 
-    /* ── TEXTOS ─────────────────────────────── */
-    .texto-editorial {
-      font-size: 26px;
-      line-height: 1.85;
-      color: #111;
-      font-weight: 400;
-      margin-bottom: 22px;
-    }
-    .subtitulo-seccion {
-      font-size: 24px;
-      font-weight: 700;
-      color: #111;
-      margin-bottom: 14px;
-      margin-top: 12px;
-    }
-    strong { font-weight: 700; color: #000; }
+    /* ── CONTENIDO ────────────────────────── */
+    .pagina-contenido { padding: 64px 80px 80px 80px; }
+    .editorial-header { margin-bottom: 32px; }
+    .kicker { font-size: 10px; color: var(--rojo); text-transform: uppercase; letter-spacing: 4px; font-weight: 700; margin-bottom: 10px; }
+    .editorial-title { font-size: 36px; font-weight: 800; color: #111; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .titulo-linea { width: 52px; height: 5px; background: var(--rojo); }
 
-    /* ── LISTAS ─────────────────────────────── */
-    .editorial-list { list-style: none; padding-left: 0; margin: 12px 0 28px 0; }
-    .list-item {
-      position: relative;
-      padding-left: 32px;
-      margin-bottom: 20px;
-      font-size: 26px;
-      line-height: 1.85;
-      color: #111;
-      font-weight: 400;
-    }
-    .editorial-list .list-item::before {
-      content: "—";
-      color: var(--rojo);
-      font-weight: 700;
-      position: absolute;
-      left: 0;
-      top: 0;
-    }
+    /* ── TEXTOS ───────────────────────────── */
+    .editorial-body { margin-top: 28px; }
+    .texto-editorial { font-size: 22px; line-height: 1.85; color: #111; font-weight: 400; margin-bottom: 20px; }
+    .subtitulo-seccion { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 12px; margin-top: 10px; }
+    strong { font-weight: 700; }
 
-    /* ── LÍNEA DE TIEMPO 7 DÍAS ─────────────── */
-    .timeline { position: relative; padding-left: 90px; margin-bottom: 8px; }
-    .timeline-rail {
-      position: absolute;
-      left: 30px;
-      top: 10px;
-      bottom: 10px;
-      width: 4px;
-      background: linear-gradient(to bottom, #dc2626, #333);
-      border-radius: 2px;
-    }
-    .tl-item {
-      position: relative;
-      margin-bottom: 16px;
-      min-height: 68px;
-      display: flex;
-      align-items: center;
-    }
-    .tl-nodo {
-      position: absolute;
-      left: -88px;
-      width: 64px;
-      height: 64px;
-      background: var(--rojo);
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(220,38,38,.4);
-    }
-    .tl-nodo-label {
-      font-size: 8px;
-      letter-spacing: 2px;
-      color: rgba(255,255,255,.65);
-      text-transform: uppercase;
-    }
-    .tl-nodo-num {
-      font-size: 26px;
-      font-weight: 900;
-      color: #fff;
-      line-height: 1;
-    }
-    .tl-card {
-      background: #fafafa;
-      border: 1px solid #e8e8e8;
-      border-left: 4px solid var(--rojo);
-      border-radius: 0 6px 6px 0;
-      padding: 16px 20px;
-      flex: 1;
-      display: flex;
-      align-items: center;
-    }
-    .tl-texto { font-size: 22px; font-weight: 400; color: #111; line-height: 1.55; }
+    /* ── RESUMEN ──────────────────────────── */
+    .resumen-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; color: var(--rojo); text-transform: uppercase; margin-bottom: 6px; margin-top: 20px; }
+    .resumen-valor { font-size: 22px; color: #111; line-height: 1.6; font-weight: 300; margin-bottom: 16px; }
 
-    /* ── GRILLA 30 DÍAS ─────────────────────── */
-    .semanas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    /* ── LISTAS ───────────────────────────── */
+    .editorial-list { list-style: none; padding-left: 0; margin: 8px 0 24px 0; }
+    .list-item { position: relative; padding-left: 28px; margin-bottom: 18px; font-size: 22px; line-height: 1.8; color: #111; font-weight: 400; }
+    .editorial-list .list-item::before { content: "—"; color: var(--rojo); font-weight: 700; position: absolute; left: 0; top: 0; }
+
+    /* ── LÍNEA DE TIEMPO 7 DÍAS ─────────── */
+    .timeline { position: relative; padding-left: 88px; margin-top: 8px; }
+    .timeline-rail { position: absolute; left: 30px; top: 8px; bottom: 8px; width: 4px; background: linear-gradient(to bottom, #dc2626, #333); border-radius: 2px; }
+    .tl-item { position: relative; margin-bottom: 14px; min-height: 66px; display: flex; align-items: center; }
+    .tl-nodo { position: absolute; left: -86px; width: 62px; height: 62px; background: var(--rojo); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(220,38,38,.4); }
+    .tl-nodo-label { font-size: 7px; letter-spacing: 2px; color: rgba(255,255,255,.65); text-transform: uppercase; }
+    .tl-nodo-num { font-size: 24px; font-weight: 900; color: #fff; line-height: 1; }
+    .tl-card { background: #fafafa; border: 1px solid #e8e8e8; border-left: 4px solid var(--rojo); border-radius: 0 6px 6px 0; padding: 14px 18px; flex: 1; }
+    .tl-texto { font-size: 20px; color: #111; line-height: 1.55; font-weight: 400; }
+
+    /* ── GRILLA 30 DÍAS ──────────────────── */
+    .semanas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
     .sem-card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
     .sem-header { padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
-    .sem-num-bg {
-      font-size: 52px;
-      font-weight: 900;
-      color: rgba(255,255,255,.12);
-      line-height: 1;
-      flex-shrink: 0;
-    }
+    .sem-num-bg { font-size: 50px; font-weight: 900; color: rgba(255,255,255,.12); line-height: 1; flex-shrink: 0; }
     .sem-info { display: flex; flex-direction: column; }
     .sem-label { font-size: 8px; letter-spacing: 3px; color: rgba(255,255,255,.4); text-transform: uppercase; }
-    .sem-obj { font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; margin-top: 3px; line-height: 1.3; }
+    .sem-obj { font-size: 12px; font-weight: 700; color: #fff; text-transform: uppercase; margin-top: 3px; line-height: 1.3; }
     .sem-body { padding: 14px 18px; background: #fafafa; }
-    .sem-acc-label { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: var(--rojo); text-transform: uppercase; margin-bottom: 6px; }
+    .sem-acc-label { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: var(--rojo); text-transform: uppercase; margin-bottom: 5px; }
     .sem-acc-texto { font-size: 16px; color: #111; line-height: 1.6; }
 
-    /* ── IDEAS DE CONTENIDO ─────────────────── */
+    /* ── IDEAS DE CONTENIDO ──────────────── */
     .idea-card { display: flex; border-radius: 8px; overflow: hidden; margin-bottom: 14px; min-height: 90px; }
-    .idea-lat {
-      width: 68px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
+    .idea-lat { width: 66px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .idea-lat-label { font-size: 7px; letter-spacing: 2px; color: rgba(255,255,255,.4); text-transform: uppercase; }
-    .idea-lat-num { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
+    .idea-lat-num { font-size: 30px; font-weight: 900; color: #fff; line-height: 1; }
     .idea-cuerpo { flex: 1; border: 1px solid #e0e0e0; border-left: none; border-radius: 0 8px 8px 0; }
-    .idea-gancho-box { background: #f0f0f0; padding: 11px 18px; border-bottom: 1px solid #e0e0e0; }
+    .idea-gancho-box { background: #f0f0f0; padding: 10px 16px; border-bottom: 1px solid #e0e0e0; }
     .idea-gancho-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: var(--rojo); text-transform: uppercase; margin-bottom: 3px; }
     .idea-gancho { font-size: 17px; font-weight: 700; color: #111; font-style: italic; line-height: 1.4; }
-    .idea-meta { display: flex; padding: 10px 18px; background: #fafafa; gap: 14px; }
+    .idea-meta { display: flex; padding: 10px 16px; background: #fafafa; gap: 14px; }
     .idea-col { flex: 1; }
     .idea-col-label { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: #999; text-transform: uppercase; margin-bottom: 3px; }
     .idea-col-val { font-size: 14px; color: #111; line-height: 1.4; }
 
-    /* ── SI / ENTONCES ──────────────────────── */
+    /* ── SI / ENTONCES ───────────────────── */
     .se-bloque { margin-bottom: 18px; }
     .se-num { font-size: 9px; font-weight: 700; letter-spacing: 3px; color: #ccc; text-transform: uppercase; margin-bottom: 6px; }
     .se-flujo { display: flex; align-items: stretch; }
-    .se-si {
-      flex: 1;
-      background: #f4f4f4;
-      border: 2px solid #e0e0e0;
-      border-right: none;
-      border-radius: 8px 0 0 8px;
-      padding: 16px 18px;
-    }
+    .se-si { flex: 1; background: #f4f4f4; border: 2px solid #e0e0e0; border-right: none; border-radius: 8px 0 0 8px; padding: 16px 18px; }
     .se-si-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: #aaa; text-transform: uppercase; margin-bottom: 6px; }
-    .se-si-texto { font-size: 18px; font-weight: 500; color: #111; line-height: 1.5; }
-    .se-flecha {
-      background: var(--rojo);
-      width: 52px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-    }
-    .se-flecha-label { font-size: 7px; letter-spacing: 1px; color: rgba(255,255,255,.55); text-transform: uppercase; }
-    .se-entonces {
-      flex: 1;
-      background: var(--negro);
-      border: 2px solid var(--negro);
-      border-left: none;
-      border-radius: 0 8px 8px 0;
-      padding: 16px 18px;
-    }
+    .se-si-texto { font-size: 17px; font-weight: 500; color: #111; line-height: 1.5; }
+    .se-flecha { background: var(--rojo); width: 52px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+    .se-flecha-label { font-size: 7px; letter-spacing: 1px; color: rgba(255,255,255,.6); text-transform: uppercase; }
+    .se-entonces { flex: 1; background: var(--negro); border: 2px solid var(--negro); border-left: none; border-radius: 0 8px 8px 0; padding: 16px 18px; }
     .se-entonces-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: rgba(255,255,255,.35); text-transform: uppercase; margin-bottom: 6px; }
-    .se-entonces-texto { font-size: 18px; font-weight: 500; color: #fff; line-height: 1.5; }
+    .se-entonces-texto { font-size: 17px; font-weight: 500; color: #fff; line-height: 1.5; }
 
-    /* ── MENSAJES DE VENTA ──────────────────── */
-    .msj-card { position: relative; padding: 30px 34px 26px; border-radius: 8px; margin-bottom: 16px; }
+    /* ── MENSAJES DE VENTA ───────────────── */
+    .msj-card { position: relative; padding: 28px 32px 24px; border-radius: 8px; margin-bottom: 14px; }
     .msj-cla { background: #fafafa; border: 1px solid #e0e0e0; }
     .msj-osc { background: var(--negro); }
-    .msj-comilla {
-      position: absolute;
-      top: 4px;
-      left: 14px;
-      font-size: 90px;
-      font-weight: 900;
-      color: var(--rojo);
-      opacity: .15;
-      line-height: 1;
-      font-family: Georgia, serif;
-    }
-    .msj-num { position: absolute; top: 14px; right: 18px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #aaa; }
-    .msj-texto { font-size: 22px; font-weight: 500; line-height: 1.7; font-style: italic; position: relative; z-index: 1; padding-left: 6px; }
+    .msj-comilla { position: absolute; top: 4px; left: 14px; font-size: 80px; font-weight: 900; color: var(--rojo); opacity: .15; line-height: 1; font-family: Georgia, serif; }
+    .msj-num { position: absolute; top: 12px; right: 16px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #aaa; }
+    .msj-texto { font-size: 20px; font-weight: 500; line-height: 1.7; font-style: italic; position: relative; z-index: 1; padding-left: 6px; }
     .msj-cla .msj-texto { color: #111; }
     .msj-osc .msj-texto { color: #fff; }
 
-    /* ── MÉTRICAS ───────────────────────────── */
-    .metrica-card {
-      display: flex;
-      gap: 22px;
-      background: #f5f5f5;
-      border-left: 5px solid var(--rojo);
-      padding: 22px 24px;
-      margin-bottom: 20px;
-      border-radius: 0 8px 8px 0;
-      align-items: flex-start;
-    }
-    .metrica-badge {
-      width: 42px;
-      height: 42px;
-      background: var(--rojo);
-      border-radius: 50%;
-      color: #fff;
-      font-size: 18px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+    /* ── MÉTRICAS ────────────────────────── */
+    .metrica-card { display: flex; gap: 20px; background: #f5f5f5; border-left: 5px solid var(--rojo); padding: 20px 22px; margin-bottom: 16px; border-radius: 0 8px 8px 0; align-items: flex-start; }
+    .metrica-badge { width: 40px; height: 40px; background: var(--rojo); border-radius: 50%; color: #fff; font-size: 17px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .metrica-body { flex: 1; }
-    .metrica-que { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 12px; }
-    .metrica-row { margin-bottom: 10px; }
-    .metrica-label { font-size: 9px; letter-spacing: 2px; font-weight: 700; color: var(--rojo); text-transform: uppercase; display: block; margin-bottom: 3px; }
-    .metrica-val { font-size: 17px; color: #333; line-height: 1.55; }
+    .metrica-que { font-size: 19px; font-weight: 700; color: #111; margin-bottom: 10px; }
+    .metrica-row { margin-bottom: 8px; }
+    .metrica-label { font-size: 9px; letter-spacing: 2px; font-weight: 700; color: var(--rojo); text-transform: uppercase; display: block; margin-bottom: 2px; }
+    .metrica-val { font-size: 16px; color: #333; line-height: 1.5; }
 
-    /* ── CIERRE / CTA ───────────────────────── */
-    .contenedor-cierre { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60vh; }
-    .caja-premium-cierre {
-      background-color: var(--negro);
-      color: #fff;
-      border: 1px solid #334155;
-      padding: 54px;
-      width: 100%;
-      text-align: center;
-    }
-    .cierre-titulo {
-      color: #fff;
-      font-size: 26px;
-      text-transform: uppercase;
-      border-bottom: 2px solid var(--rojo);
-      padding-bottom: 18px;
-      margin-bottom: 26px;
-      letter-spacing: 2px;
-      font-weight: 700;
-    }
-    .texto-cierre { color: #e5e7eb; font-size: 24px; line-height: 1.85; margin-bottom: 18px; font-weight: 300; }
-    .cierre-list { list-style: none; padding-left: 0; margin: 10px 0 20px 0; }
-    .cierre-list .list-item {
-      position: relative;
-      padding-left: 30px;
-      margin-bottom: 14px;
-      font-size: 20px;
-      color: #d1d5db;
-      font-weight: 300;
-      line-height: 1.7;
-    }
-    .cierre-list .list-item::before { content: "—"; color: var(--rojo); position: absolute; left: 0; top: 0; }
-    .caja-cta-blanca {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-left: 4px solid var(--rojo);
-      padding: 28px 32px;
-      margin-top: 32px;
-    }
-    .cta-titulo { color: var(--rojo); font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
-    .cta-texto { color: #111; font-size: 20px; font-weight: 400; line-height: 1.7; }
-    .black-box-cta {
-      background-color: var(--negro);
-      color: #fff;
-      padding: 54px;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      width: 100%;
-      text-align: center;
-    }
-    .black-box-cta h3 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-      color: #fff;
-      text-transform: uppercase;
-      border-bottom: 2px solid var(--rojo);
-      padding-bottom: 18px;
-      display: inline-block;
-    }
-    .black-box-cta p { font-size: 20px; font-weight: 300; line-height: 1.7; color: #e5e7eb; margin: 0 auto 36px auto; max-width: 80%; }
-    .btn-premium {
-      display: inline-block;
-      background-color: var(--rojo);
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 40px;
-      font-weight: 700;
-      font-size: 17px;
-      letter-spacing: 1px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
+    /* ── CTA FINAL ───────────────────────── */
+    .pagina-cta { background: var(--negro); display: flex; align-items: center; justify-content: center; padding: 80px; }
+    .cta-inner { max-width: 520px; text-align: center; }
+    .cta-titulo { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid var(--rojo); padding-bottom: 20px; margin-bottom: 28px; }
+    .cta-desc { font-size: 20px; color: #aaa; line-height: 1.7; font-weight: 300; margin-bottom: 36px; }
+    .cta-box { background: #1a1a1a; border-left: 4px solid var(--rojo); padding: 24px 28px; text-align: left; }
+    .cta-box-label { font-size: 10px; letter-spacing: 3px; color: var(--rojo); font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+    .cta-box-texto { font-size: 18px; color: #ddd; line-height: 1.6; font-weight: 300; }
   </style>
 </head>
 <body>
-  <!-- CARÁTULA PRINCIPAL -->
-  <div class="cover">
-    <div class="cover-logo-svg">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="130" height="130">
-        <rect width="120" height="120" fill="#1a1a1a" rx="8"/>
-        <text x="60" y="70" text-anchor="middle" font-family="Georgia,serif" font-size="60" fill="white" font-weight="bold">P</text>
-        <line x1="25" y1="82" x2="95" y2="82" stroke="#dc2626" stroke-width="4"/>
-        <text x="60" y="100" text-anchor="middle" font-family="Georgia,serif" font-size="14" fill="#dc2626" letter-spacing="4">0</text>
-      </svg>
-    </div>
-    <h1>PROBLEMA CERO</h1>
-    <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
-    <div class="private">INFORME PRIVADO</div>
-    <div class="diag-title">Diagnóstico<br>estratégico</div>
-    <div class="description">Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.</div>
-    <div class="cover-footer">
-      <div class="label">Dirección Estratégica</div>
-      <div class="value">Lic. Hernán Mariano Waisman</div>
+
+  <!-- CARÁTULA -->
+  <div class="pagina pagina-caratula">
+    ${logoTag}
+    <div class="caratula-brand">PROBLEMA CERO</div>
+    <div class="caratula-sub">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
+    <div class="caratula-tag">I N F O R M E &nbsp; P R I V A D O</div>
+    <div class="caratula-titulo">Diagnóstico<br>estratégico</div>
+    <div class="caratula-divider"></div>
+    <div class="caratula-desc">Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.</div>
+    <div class="caratula-firma">
+      <div class="caratula-firma-label">D I R E C C I Ó N &nbsp; E S T R A T É G I C A</div>
+      <div class="caratula-firma-name">Lic. Hernán Mariano Waisman</div>
     </div>
   </div>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <div class="page-content">${contenidoHTML}</div>
+  <!-- SECCIONES DE CONTENIDO -->
+  ${paginasHTML}
+
 </body>
 </html>`;
 }
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // RUTA PRINCIPAL
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 app.post("/*", async (req, res) => {
   let browser = null;
   try {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
     if (!diagnostico) return res.status(400).json({ error: "No se envió texto para el PDF" });
 
-    const htmlFinal = generarPlantillaPDF(diagnostico);
+    const htmlFinal = generarHTML(diagnostico);
 
     browser = await puppeteer.launch({
       headless: "new",
@@ -915,7 +645,7 @@ app.post("/*", async (req, res) => {
       margin: { top: "0px", bottom: "72px", left: "0px", right: "0px" },
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
-      footerTemplate: `<div style="font-size:11px;width:100%;color:#555;padding:0 84px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+      footerTemplate: `<div style="font-size:11px;width:100%;color:#555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
         <span style="font-weight:700;color:#dc2626;letter-spacing:3px;">PROBLEMA CERO</span>
         <span>PÁGINA <span class="pageNumber"></span></span>
       </div>`
@@ -937,4 +667,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.0 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v5.0 activo en puerto ${PORT}`));
