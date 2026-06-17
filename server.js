@@ -9,20 +9,27 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v5.0");
+  res.send("Motor PDF Problema Cero v5.1");
 });
 
 // ─────────────────────────────────────────────
-// LOGO — ruta local del repositorio
+// LOGO — lee logo.png del repositorio
 // ─────────────────────────────────────────────
-function getLogoBase64() {
-  try {
-    const logoPath = path.join(__dirname, "logo.png");
-    const data = fs.readFileSync(logoPath);
-    return "data:image/png;base64," + data.toString("base64");
-  } catch (e) {
-    return null;
+let LOGO_BASE64 = null;
+try {
+  const logoPath = path.join(__dirname, "logo.png");
+  if (fs.existsSync(logoPath)) {
+    LOGO_BASE64 = "data:image/png;base64," + fs.readFileSync(logoPath).toString("base64");
   }
+} catch (e) {
+  console.log("Logo no encontrado, usando fallback.");
+}
+
+function getLogoTag() {
+  if (LOGO_BASE64) {
+    return `<img src="${LOGO_BASE64}" alt="Problema Cero" class="logo-portada">`;
+  }
+  return `<div class="logo-fallback">P<span>0</span></div>`;
 }
 
 function limpiarTexto(texto) {
@@ -151,21 +158,18 @@ function renderMetricas(items) {
 }
 
 // ─────────────────────────────────────────────
-// PARSER — convierte texto Gemini en secciones HTML
-// Cada sección = div independiente con page-break
+// PARSER
 // ─────────────────────────────────────────────
 function parsearTexto(textoCrudo) {
-  // Escapar HTML
   const texto = textoCrudo
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
   const lineas = texto.split("\n");
-  const secciones = []; // Array de { titulo, kicker, html }
+  const secciones = [];
   let seccionActual = null;
   let enLista = false;
 
-  // Buffers visuales
   let diasBuf = [], semanasBuf = [], ideasBuf = [], siEntoncesBuf = [];
   let mensajesBuf = [], metricasBuf = [];
   let ideaActual = null, metricaActual = null;
@@ -173,7 +177,6 @@ function parsearTexto(textoCrudo) {
   let enDias = false, enSemanas = false, enIdeas = false;
   let enSiEntonces = false, enMensajes = false, enMetricas = false;
 
-  // Líneas a ignorar completamente
   const IGNORAR = [
     "CASO DEL CLIENTE:", "EL NEGOCIO:", "EL PROBLEMA ELEGIDO",
     "LAS BASES DEL NEGOCIO:", "EL PUNTO DE BLOQUEO:", "EL OBJETIVO A 90",
@@ -182,20 +185,17 @@ function parsearTexto(textoCrudo) {
     "Aquí tienes el análisis", "🚀 Etapa privada", "🧠 Para armar",
     "🔎 Feedback", "Del 1 al 10", "El resultado depende",
     "¿Tenés más TIEMPO", "¿Este análisis", "¿Qué punto específico",
-    "Logo Problema Cero"
+    "Logo Problema Cero", "PROBLEMA CERO", "Lic. Hernán",
+    "Director Estratégico", "Mi objetivo no es"
   ];
 
-  // Títulos reconocidos
   const RX_TITULO = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBER[ÍI]A CREAR|MENSAJES DE VENTA.*|M[ÉE]TRICA.*MIRAR|SI\s*\/\s*ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCI[ÓO]N CONCRETA|IMPACTO|CIERRE)$/i;
 
-  // CTA de cierre
   const RX_CTA = /ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL/i;
-  const RX_CTA2 = /TU SIGUIENTE NIVEL/i;
 
-  let ignorarResto = false;
   let contenidoEmpezado = false;
 
-  function kicKerPara(titulo) {
+  function kickerPara(titulo) {
     const t = titulo.toUpperCase();
     if (/RESUMEN|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|IMPACTO|CIERRE/.test(t)) return "Lectura Estratégica";
     if (/MAPA EJECUTIVO|PRIORIDAD|DEJAR|CORREGIR|SI.*ENTONCES/.test(t)) return "Arquitectura de Decisiones";
@@ -208,28 +208,15 @@ function parsearTexto(textoCrudo) {
   function volcarBuffers() {
     if (!seccionActual) return;
     if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
-
-    if (enDias && diasBuf.length) {
-      seccionActual.html += renderDias(diasBuf);
-      diasBuf = []; enDias = false;
-    }
-    if (enSemanas && semanasBuf.length) {
-      seccionActual.html += renderSemanas(semanasBuf);
-      semanasBuf = []; enSemanas = false;
-    }
+    if (enDias && diasBuf.length) { seccionActual.html += renderDias(diasBuf); diasBuf = []; enDias = false; }
+    if (enSemanas && semanasBuf.length) { seccionActual.html += renderSemanas(semanasBuf); semanasBuf = []; enSemanas = false; }
     if (enIdeas) {
       if (ideaActual) { ideasBuf.push(ideaActual); ideaActual = null; }
       if (ideasBuf.length) { seccionActual.html += renderIdeas(ideasBuf); ideasBuf = []; }
       enIdeas = false;
     }
-    if (enSiEntonces && siEntoncesBuf.length) {
-      seccionActual.html += renderSiEntonces(siEntoncesBuf);
-      siEntoncesBuf = []; enSiEntonces = false;
-    }
-    if (enMensajes && mensajesBuf.length) {
-      seccionActual.html += renderMensajes(mensajesBuf);
-      mensajesBuf = []; enMensajes = false;
-    }
+    if (enSiEntonces && siEntoncesBuf.length) { seccionActual.html += renderSiEntonces(siEntoncesBuf); siEntoncesBuf = []; enSiEntonces = false; }
+    if (enMensajes && mensajesBuf.length) { seccionActual.html += renderMensajes(mensajesBuf); mensajesBuf = []; enMensajes = false; }
     if (enMetricas) {
       if (metricaActual) { metricasBuf.push(metricaActual); metricaActual = null; }
       if (metricasBuf.length) { seccionActual.html += renderMetricas(metricasBuf); metricasBuf = []; }
@@ -240,8 +227,7 @@ function parsearTexto(textoCrudo) {
   function nuevaSeccion(titulo) {
     volcarBuffers();
     if (seccionActual) secciones.push(seccionActual);
-    seccionActual = { titulo, kicker: kicKerPara(titulo), html: "" };
-
+    seccionActual = { titulo, kicker: kickerPara(titulo), html: "" };
     const t = titulo.toUpperCase();
     enDias       = /PLAN.*7|PRÓXIMOS 7/.test(t) || (/PLAN DE ACCIÓN/.test(t) && !/30/.test(t));
     enSemanas    = /PLAN.*30|PRÓXIMOS 30/.test(t) || (/PLAN DE ACCIÓN/.test(t) && /30/.test(t));
@@ -252,21 +238,18 @@ function parsearTexto(textoCrudo) {
   }
 
   lineas.forEach(linea => {
-    if (ignorarResto) return;
     const limpia = linea.trim();
     if (!limpia) return;
     if (limpia.match(/^━+$/) || limpia.match(/^═+$/)) return;
     if (IGNORAR.some(p => limpia.startsWith(p))) return;
 
-    // CTA de cierre — sección especial
-    if (RX_CTA.test(limpia) || RX_CTA2.test(limpia)) {
+    if (RX_CTA.test(limpia)) {
       volcarBuffers();
       if (seccionActual) secciones.push(seccionActual);
       seccionActual = { titulo: "CTA", kicker: "", html: "", esCTA: true };
       return;
     }
 
-    // ── Detectar título de sección ────────────────────────
     const mT = limpia.match(RX_TITULO);
     if (mT) {
       contenidoEmpezado = true;
@@ -277,15 +260,15 @@ function parsearTexto(textoCrudo) {
     if (!contenidoEmpezado) return;
     if (!seccionActual) return;
 
-    // ── Subtítulos 👉 ─────────────────────────────────────
+    // Subtítulos 👉
     if (limpia.startsWith("👉")) {
       if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
       const sub = sinMd(limpia.replace(/^👉\s*/, ""));
-      if (sub.toLowerCase().startsWith("tu problema principal")) {
+      if (/tu problema principal/i.test(sub)) {
         seccionActual.html += `<div class="resumen-label">Tu problema principal:</div><div class="resumen-valor">${limpiarTexto(sub.replace(/^tu problema principal[:\s]*/i, ""))}</div>`;
-      } else if (sub.toLowerCase().startsWith("qué está pasando") || sub.toLowerCase().startsWith("que está pasando")) {
+      } else if (/qué está pasando|que está pasando/i.test(sub)) {
         seccionActual.html += `<div class="resumen-label">Qué está pasando:</div>`;
-      } else if (sub.toLowerCase().startsWith("qué deberías corregir") || sub.toLowerCase().startsWith("que deberías corregir")) {
+      } else if (/qué deberías corregir|que deberías corregir/i.test(sub)) {
         seccionActual.html += `<div class="resumen-label">Qué deberías corregir primero:</div>`;
       } else {
         seccionActual.html += `<p class="subtitulo-seccion">${limpiarTexto(sub)}</p>`;
@@ -293,13 +276,13 @@ function parsearTexto(textoCrudo) {
       return;
     }
 
-    // ── CAPTURA DÍAS ──────────────────────────────────────
+    // Captura días
     if (enDias) {
       const m = limpia.match(/^[-—*]?\s*\*{0,2}D[ií]a\s*(\d+)\*{0,2}[:\s]+(.+)/i);
       if (m) { diasBuf.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
     }
 
-    // ── CAPTURA SEMANAS ───────────────────────────────────
+    // Captura semanas
     if (enSemanas) {
       const m = limpia.match(/^[-—*]?\s*\*{0,2}Semana\s*(\d+)\*{0,2}[:\s]+(.+)/i);
       if (m) {
@@ -315,14 +298,12 @@ function parsearTexto(textoCrudo) {
       }
     }
 
-    // ── CAPTURA IDEAS ─────────────────────────────────────
+    // Captura ideas
     if (enIdeas) {
-      // Detecta gancho directo en bullet: "- **Gancho:** texto"
-      const mG = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
-      const mT2 = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
-      const mO = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
       const mNum = limpia.match(/^[-—*]?\s*\*{0,2}Idea\s*(\d+)\*{0,2}[:\s]*$/i);
-
+      const mG   = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
+      const mT2  = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
+      const mO   = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
       if (mNum) {
         if (ideaActual) ideasBuf.push(ideaActual);
         ideaActual = { numero: mNum[1], gancho: "", tema: "", objetivo: "" };
@@ -330,91 +311,68 @@ function parsearTexto(textoCrudo) {
       }
       if (mG) {
         if (!ideaActual) ideaActual = { numero: String(ideasBuf.length + 1), gancho: "", tema: "", objetivo: "" };
-        ideaActual.gancho = sinMd(mG[1]);
-        return;
+        ideaActual.gancho = sinMd(mG[1]); return;
       }
       if (mT2 && ideaActual) { ideaActual.tema = sinMd(mT2[1]); return; }
       if (mO && ideaActual) {
         ideaActual.objetivo = sinMd(mO[1]);
-        // Auto-push cuando tenemos los 3 campos
-        if (ideaActual.gancho && ideaActual.tema && ideaActual.objetivo) {
-          ideasBuf.push(ideaActual);
-          ideaActual = null;
-        }
+        if (ideaActual.gancho && ideaActual.tema) { ideasBuf.push(ideaActual); ideaActual = null; }
         return;
       }
     }
 
-    // ── CAPTURA SI/ENTONCES ───────────────────────────────
+    // Captura si/entonces
     if (enSiEntonces) {
       const m = limpia.match(/^[-—*]?\s*\*{0,2}Si\*{0,2}\s+(.*?),?\s+\*{0,2}entonces\*{0,2}\s+(.*)/i);
       if (m) { siEntoncesBuf.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
     }
 
-    // ── CAPTURA MENSAJES ──────────────────────────────────
+    // Captura mensajes
     if (enMensajes) {
       const m1 = limpia.match(/^[-—*]?\s*[""""](.+)[""""]/);
       if (m1) { mensajesBuf.push(sinMd(m1[1])); return; }
-      if (limpia.startsWith("- ") || limpia.startsWith("— ")) {
+      if ((limpia.startsWith("- ") || limpia.startsWith("— ")) && limpia.length > 12) {
         const msg = limpia.substring(2).replace(/^[""""]/,"").replace(/[""""]\s*$/,"").trim();
         if (msg.length > 10) { mensajesBuf.push(sinMd(msg)); return; }
       }
     }
 
-    // ── CAPTURA MÉTRICAS ──────────────────────────────────
+    // Captura métricas
     if (enMetricas) {
       const mQue = limpia.match(/\*{0,2}(?:Qué mirar|Métrica)\*{0,2}[:\s]+(.+)/i);
       const mPQ  = limpia.match(/\*{0,2}Por qué importa\*{0,2}[:\s]+(.+)/i);
       const mDec = limpia.match(/\*{0,2}Qué decisión tomar\*{0,2}[:\s]+(.+)/i);
-      if (mQue) {
-        if (metricaActual) metricasBuf.push(metricaActual);
-        metricaActual = { que: sinMd(mQue[1]), porQue: "", decision: "" };
-        return;
-      }
+      if (mQue) { if (metricaActual) metricasBuf.push(metricaActual); metricaActual = { que: sinMd(mQue[1]), porQue: "", decision: "" }; return; }
       if (mPQ && metricaActual) { metricaActual.porQue = sinMd(mPQ[1]); return; }
       if (mDec && metricaActual) { metricaActual.decision = sinMd(mDec[1]); return; }
     }
 
-    // ── LISTAS NORMALES ───────────────────────────────────
+    // Listas normales
     if (limpia.startsWith("- ") || limpia.startsWith("* ") || limpia.startsWith("— ")) {
-      if (!enLista) {
-        seccionActual.html += '<ul class="editorial-list">';
-        enLista = true;
-      }
+      if (!enLista) { seccionActual.html += '<ul class="editorial-list">'; enLista = true; }
       const itemTexto = limpia.substring(2).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
       seccionActual.html += `<li class="list-item">${itemTexto}</li>`;
       return;
-    } else if (enLista) {
-      seccionActual.html += "</ul>";
-      enLista = false;
-    }
+    } else if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
 
-    // ── PÁRRAFO NORMAL ────────────────────────────────────
+    // Párrafo normal
     if (!limpia.startsWith("<")) {
       const p = limpia.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
       seccionActual.html += `<p class="texto-editorial">${p}</p>`;
     }
   });
 
-  // Volcar lo último
   volcarBuffers();
   if (seccionActual) secciones.push(seccionActual);
-
   return secciones;
 }
 
 // ─────────────────────────────────────────────
-// GENERAR HTML COMPLETO
+// GENERAR HTML
 // ─────────────────────────────────────────────
 function generarHTML(texto) {
-  const logoBase64 = getLogoBase64();
-  const logoTag = logoBase64
-    ? `<img src="${logoBase64}" alt="Problema Cero" class="logo-portada">`
-    : `<div class="logo-fallback">P<span>0</span></div>`;
-
   const secciones = parsearTexto(texto);
 
-  // Construir páginas de contenido
   let paginasHTML = "";
   secciones.forEach(sec => {
     if (sec.esCTA) {
@@ -431,7 +389,6 @@ function generarHTML(texto) {
       </div>`;
       return;
     }
-
     paginasHTML += `
     <div class="pagina pagina-contenido">
       <div class="editorial-header">
@@ -439,9 +396,7 @@ function generarHTML(texto) {
         <h2 class="editorial-title">${limpiarTexto(sec.titulo)}</h2>
         <div class="titulo-linea"></div>
       </div>
-      <div class="editorial-body">
-        ${sec.html}
-      </div>
+      <div class="editorial-body">${sec.html}</div>
     </div>`;
   });
 
@@ -454,37 +409,10 @@ function generarHTML(texto) {
     :root { --rojo: #dc2626; --negro: #0a0a0a; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', sans-serif; background: #fff; color: #111; }
-
-    /* ── CADA PÁGINA ES UN DIV INDEPENDIENTE ── */
-    .pagina {
-      width: 210mm;
-      min-height: 297mm;
-      page-break-after: always;
-      break-after: page;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* ── CARÁTULA ─────────────────────────── */
-    .pagina-caratula {
-      background: var(--negro);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 60px 70px;
-      color: #fff;
-    }
+    .pagina { width: 210mm; min-height: 297mm; page-break-after: always; break-after: page; position: relative; overflow: hidden; }
+    .pagina-caratula { background: var(--negro); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 70px; color: #fff; }
     .logo-portada { width: 160px; margin-bottom: 32px; }
-    .logo-fallback {
-      width: 100px; height: 100px;
-      background: #1a1a1a;
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 52px; font-weight: 900; color: #fff;
-      margin-bottom: 32px;
-    }
+    .logo-fallback { width: 100px; height: 100px; background: #1a1a1a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 52px; font-weight: 900; color: #fff; margin-bottom: 32px; }
     .logo-fallback span { color: var(--rojo); }
     .caratula-brand { font-size: 22px; font-weight: 900; letter-spacing: 6px; color: var(--rojo); margin-bottom: 6px; }
     .caratula-sub { font-size: 11px; letter-spacing: 3px; color: #888; margin-bottom: 4px; }
@@ -495,30 +423,20 @@ function generarHTML(texto) {
     .caratula-firma { margin-top: 36px; }
     .caratula-firma-label { font-size: 9px; letter-spacing: 4px; color: #555; margin-bottom: 6px; }
     .caratula-firma-name { font-size: 20px; color: #fff; font-weight: 400; }
-
-    /* ── CONTENIDO ────────────────────────── */
     .pagina-contenido { padding: 64px 80px 80px 80px; }
     .editorial-header { margin-bottom: 32px; }
     .kicker { font-size: 10px; color: var(--rojo); text-transform: uppercase; letter-spacing: 4px; font-weight: 700; margin-bottom: 10px; }
     .editorial-title { font-size: 36px; font-weight: 800; color: #111; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
     .titulo-linea { width: 52px; height: 5px; background: var(--rojo); }
-
-    /* ── TEXTOS ───────────────────────────── */
     .editorial-body { margin-top: 28px; }
     .texto-editorial { font-size: 22px; line-height: 1.85; color: #111; font-weight: 400; margin-bottom: 20px; }
     .subtitulo-seccion { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 12px; margin-top: 10px; }
     strong { font-weight: 700; }
-
-    /* ── RESUMEN ──────────────────────────── */
     .resumen-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; color: var(--rojo); text-transform: uppercase; margin-bottom: 6px; margin-top: 20px; }
     .resumen-valor { font-size: 22px; color: #111; line-height: 1.6; font-weight: 300; margin-bottom: 16px; }
-
-    /* ── LISTAS ───────────────────────────── */
     .editorial-list { list-style: none; padding-left: 0; margin: 8px 0 24px 0; }
     .list-item { position: relative; padding-left: 28px; margin-bottom: 18px; font-size: 22px; line-height: 1.8; color: #111; font-weight: 400; }
     .editorial-list .list-item::before { content: "—"; color: var(--rojo); font-weight: 700; position: absolute; left: 0; top: 0; }
-
-    /* ── LÍNEA DE TIEMPO 7 DÍAS ─────────── */
     .timeline { position: relative; padding-left: 88px; margin-top: 8px; }
     .timeline-rail { position: absolute; left: 30px; top: 8px; bottom: 8px; width: 4px; background: linear-gradient(to bottom, #dc2626, #333); border-radius: 2px; }
     .tl-item { position: relative; margin-bottom: 14px; min-height: 66px; display: flex; align-items: center; }
@@ -527,8 +445,6 @@ function generarHTML(texto) {
     .tl-nodo-num { font-size: 24px; font-weight: 900; color: #fff; line-height: 1; }
     .tl-card { background: #fafafa; border: 1px solid #e8e8e8; border-left: 4px solid var(--rojo); border-radius: 0 6px 6px 0; padding: 14px 18px; flex: 1; }
     .tl-texto { font-size: 20px; color: #111; line-height: 1.55; font-weight: 400; }
-
-    /* ── GRILLA 30 DÍAS ──────────────────── */
     .semanas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
     .sem-card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
     .sem-header { padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
@@ -539,8 +455,6 @@ function generarHTML(texto) {
     .sem-body { padding: 14px 18px; background: #fafafa; }
     .sem-acc-label { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: var(--rojo); text-transform: uppercase; margin-bottom: 5px; }
     .sem-acc-texto { font-size: 16px; color: #111; line-height: 1.6; }
-
-    /* ── IDEAS DE CONTENIDO ──────────────── */
     .idea-card { display: flex; border-radius: 8px; overflow: hidden; margin-bottom: 14px; min-height: 90px; }
     .idea-lat { width: 66px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .idea-lat-label { font-size: 7px; letter-spacing: 2px; color: rgba(255,255,255,.4); text-transform: uppercase; }
@@ -553,8 +467,6 @@ function generarHTML(texto) {
     .idea-col { flex: 1; }
     .idea-col-label { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: #999; text-transform: uppercase; margin-bottom: 3px; }
     .idea-col-val { font-size: 14px; color: #111; line-height: 1.4; }
-
-    /* ── SI / ENTONCES ───────────────────── */
     .se-bloque { margin-bottom: 18px; }
     .se-num { font-size: 9px; font-weight: 700; letter-spacing: 3px; color: #ccc; text-transform: uppercase; margin-bottom: 6px; }
     .se-flujo { display: flex; align-items: stretch; }
@@ -566,8 +478,6 @@ function generarHTML(texto) {
     .se-entonces { flex: 1; background: var(--negro); border: 2px solid var(--negro); border-left: none; border-radius: 0 8px 8px 0; padding: 16px 18px; }
     .se-entonces-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: rgba(255,255,255,.35); text-transform: uppercase; margin-bottom: 6px; }
     .se-entonces-texto { font-size: 17px; font-weight: 500; color: #fff; line-height: 1.5; }
-
-    /* ── MENSAJES DE VENTA ───────────────── */
     .msj-card { position: relative; padding: 28px 32px 24px; border-radius: 8px; margin-bottom: 14px; }
     .msj-cla { background: #fafafa; border: 1px solid #e0e0e0; }
     .msj-osc { background: var(--negro); }
@@ -576,8 +486,6 @@ function generarHTML(texto) {
     .msj-texto { font-size: 20px; font-weight: 500; line-height: 1.7; font-style: italic; position: relative; z-index: 1; padding-left: 6px; }
     .msj-cla .msj-texto { color: #111; }
     .msj-osc .msj-texto { color: #fff; }
-
-    /* ── MÉTRICAS ────────────────────────── */
     .metrica-card { display: flex; gap: 20px; background: #f5f5f5; border-left: 5px solid var(--rojo); padding: 20px 22px; margin-bottom: 16px; border-radius: 0 8px 8px 0; align-items: flex-start; }
     .metrica-badge { width: 40px; height: 40px; background: var(--rojo); border-radius: 50%; color: #fff; font-size: 17px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .metrica-body { flex: 1; }
@@ -585,8 +493,6 @@ function generarHTML(texto) {
     .metrica-row { margin-bottom: 8px; }
     .metrica-label { font-size: 9px; letter-spacing: 2px; font-weight: 700; color: var(--rojo); text-transform: uppercase; display: block; margin-bottom: 2px; }
     .metrica-val { font-size: 16px; color: #333; line-height: 1.5; }
-
-    /* ── CTA FINAL ───────────────────────── */
     .pagina-cta { background: var(--negro); display: flex; align-items: center; justify-content: center; padding: 80px; }
     .cta-inner { max-width: 520px; text-align: center; }
     .cta-titulo { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid var(--rojo); padding-bottom: 20px; margin-bottom: 28px; }
@@ -597,10 +503,8 @@ function generarHTML(texto) {
   </style>
 </head>
 <body>
-
-  <!-- CARÁTULA -->
   <div class="pagina pagina-caratula">
-    ${logoTag}
+    ${getLogoTag()}
     <div class="caratula-brand">PROBLEMA CERO</div>
     <div class="caratula-sub">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
     <div class="caratula-tag">I N F O R M E &nbsp; P R I V A D O</div>
@@ -612,10 +516,7 @@ function generarHTML(texto) {
       <div class="caratula-firma-name">Lic. Hernán Mariano Waisman</div>
     </div>
   </div>
-
-  <!-- SECCIONES DE CONTENIDO -->
   ${paginasHTML}
-
 </body>
 </html>`;
 }
@@ -633,7 +534,14 @@ app.post("/*", async (req, res) => {
 
     browser = await puppeteer.launch({
       headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-zygote",
+        "--single-process"
+      ]
     });
 
     const page = await browser.newPage();
@@ -667,4 +575,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v5.0 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v5.1 activo en puerto ${PORT}`));
