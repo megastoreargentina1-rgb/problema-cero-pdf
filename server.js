@@ -194,12 +194,12 @@ function procesarMarkdownAHTML(textoCrudo) {
     }
 
     if (enDias) {
-      const m = limpia.match(/\*?\*?D[ií]a\s+(\d+)\*?\*?[:\s]+(.+)/i);
+      const m = limpia.match(/^[-—*]?\s*\*{0,2}D[ií]a\s*(\d+)\*{0,2}[:\s]+(.+)/i);
       if (m) { diasBuffer.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
     }
 
     if (enSemanas) {
-      const m = limpia.match(/\*?\*?Semana\s+(\d+)\*?\*?[:\s]+(.+)/i);
+      const m = limpia.match(/^[-—*]?\s*\*{0,2}Semana\s*(\d+)\*{0,2}[:\s]+(.+)/i);
       if (m) {
         const resto = sinMd(m[2]);
         const mObj = resto.match(/Objetivo[:\s]+([^.]+?)(?=\s*Acci[oó]n|\s*$)/i);
@@ -214,22 +214,27 @@ function procesarMarkdownAHTML(textoCrudo) {
     }
 
     if (enIdeas) {
-      const mNum = limpia.match(/\*?\*?Idea\s+(\d+)\*?\*?[:\s]*$/i);
-      const mG   = limpia.match(/\*?\*?Gancho\*?\*?[:\s]+(.+)/i);
-      const mT   = limpia.match(/\*?\*?Tema\*?\*?[:\s]+(.+)/i);
-      const mO   = limpia.match(/\*?\*?Objetivo\*?\*?[:\s]+(.+)/i);
+      const mNum = limpia.match(/^[-—*]?\s*\*{0,2}Idea\s*(\d+)\*{0,2}[:\s]*$/i);
+      const mG   = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
+      const mT   = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
+      const mO   = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
       if (mNum) {
         if (ideaActual) ideasBuffer.push(ideaActual);
         ideaActual = { numero: mNum[1], gancho:'', tema:'', objetivo:'' };
         return;
       }
-      if (mG && ideaActual) { ideaActual.gancho   = sinMd(mG[1]); return; }
-      if (mT && ideaActual) { ideaActual.tema      = sinMd(mT[1]); return; }
-      if (mO && ideaActual) { ideaActual.objetivo  = sinMd(mO[1]); return; }
+      // Formato real: cada Gancho inicia una nueva idea
+      if (mG) {
+        if (ideaActual) ideasBuffer.push(ideaActual);
+        ideaActual = { numero: String(ideasBuffer.length + 1), gancho: sinMd(mG[1]), tema:'', objetivo:'' };
+        return;
+      }
+      if (mT && ideaActual) { ideaActual.tema     = sinMd(mT[1]); return; }
+      if (mO && ideaActual) { ideaActual.objetivo = sinMd(mO[1]); return; }
     }
 
     if (enSiEntonces) {
-      const m = limpia.match(/\*?\*?Si\*?\*?\s+(.*?)[,\s]+\*?\*?entonces\*?\*?\s+(.*)/i);
+      const m = limpia.match(/^[-—*]?\s*\*{0,2}Si\*{0,2}\s+(.*?),?\s+\*{0,2}entonces\*{0,2}\s+(.*)/i);
       if (m) { siEntoncesBuffer.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
     }
 
@@ -237,7 +242,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       const m = limpia.match(/^[-—*]?\s*[""""](.+)[""""]/);
       if (m) { mensajesBuffer.push(sinMd(m[1])); return; }
       if (limpia.startsWith('- ') || limpia.startsWith('— ')) {
-        const msg = limpia.substring(2).replace(/^[""""]/,'').replace(/[""""]\s*$/,'').trim();
+        const msg = limpia.replace(/^[-—]\s*/,'').replace(/^\d+\.\s*/,'').replace(/^[""""]/,'').replace(/[""""]\s*$/,'').trim();
         if (msg.length > 10) { mensajesBuffer.push(sinMd(msg)); return; }
       }
     }
