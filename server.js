@@ -172,7 +172,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       enSiEntonces = tituloLimpio.includes("SI / ENTONCES");
       enMensajes   = tituloLimpio.includes("MENSAJES DE VENTA");
 
-      htmlResult += '<div class="page-break"></div>';
+      htmlResult += '<div class="seccion-wrapper"><div class="page-break"></div>';
 
       let kickerText = 'Lectura Estratégica';
       if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
@@ -357,7 +357,8 @@ function generarPlantillaPDF(textoDiagnostico) {
     .cover-footer{margin-top:44px;text-align:center;}
     .cover-footer .label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;font-weight:600;}
     .cover-footer .value{font-size:19px;color:#fff;font-weight:400;}
-    .page-content{padding:70px 80px;}
+    .page-content{padding:0;}
+    .seccion-wrapper{padding:70px 80px;}
     .page-break{page-break-before:always;break-before:page;display:block;clear:both;height:1px;}
     .editorial-header{margin-bottom:36px;}
     .kicker{font-size:11px;color:var(--rojo);text-transform:uppercase;letter-spacing:4px;font-weight:700;margin-bottom:10px;}
