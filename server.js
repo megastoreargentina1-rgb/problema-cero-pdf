@@ -358,7 +358,7 @@ function generarPlantillaPDF(textoDiagnostico) {
     .cover-footer .label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;font-weight:600;}
     .cover-footer .value{font-size:19px;color:#fff;font-weight:400;}
     .page-content{padding:70px 80px;}
-    .page-break{page-break-before:always;height:1px;}
+    .page-break{page-break-before:always;break-before:page;display:block;clear:both;height:1px;}
     .editorial-header{margin-bottom:36px;}
     .kicker{font-size:11px;color:var(--rojo);text-transform:uppercase;letter-spacing:4px;font-weight:700;margin-bottom:10px;}
     .editorial-title{color:#111;font-size:34px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
@@ -473,7 +473,7 @@ app.post("/*", async (req, res) => {
       margin: { top: "0px", bottom: "72px", left: "0px", right: "0px" },
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
-      footerTemplate: `<div style="font-size:11px;width:100%;color:#555555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><span style="font-weight:600;">PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
+      footerTemplate: '<div style="font-size:11px;width:100%;color:#555;padding:0 80px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;font-family:Arial,sans-serif;"><span style="font-weight:700;color:#dc2626;letter-spacing:3px;">PROBLEMA CERO</span><span>PAGINA <span class="pageNumber"></span></span></div>' 
     });
 
     res.set({
