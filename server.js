@@ -1,36 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const puppeteer = require("puppeteer");
-const path = require("path");
-const fs = require("fs");
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v5.1");
+  res.send("Motor PDF Problema Cero v3.2");
 });
-
-// ─────────────────────────────────────────────
-// LOGO — lee logo.png del repositorio
-// ─────────────────────────────────────────────
-let LOGO_BASE64 = null;
-try {
-  const logoPath = path.join(__dirname, "logo.png");
-  if (fs.existsSync(logoPath)) {
-    LOGO_BASE64 = "data:image/png;base64," + fs.readFileSync(logoPath).toString("base64");
-  }
-} catch (e) {
-  console.log("Logo no encontrado, usando fallback.");
-}
-
-function getLogoTag() {
-  if (LOGO_BASE64) {
-    return `<img src="${LOGO_BASE64}" alt="Problema Cero" class="logo-portada">`;
-  }
-  return `<div class="logo-fallback">P<span>0</span></div>`;
-}
 
 function limpiarTexto(texto) {
   if (!texto) return "";
@@ -38,367 +16,326 @@ function limpiarTexto(texto) {
 }
 
 function sinMd(t) {
-  return String(t || "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .trim();
+  return String(t||"").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").trim();
 }
 
-// ─────────────────────────────────────────────
-// RENDERS VISUALES
-// ─────────────────────────────────────────────
-function renderDias(dias) {
-  if (!dias.length) return "";
-  let h = '<div class="timeline"><div class="timeline-rail"></div>';
-  dias.forEach(d => {
-    h += `<div class="tl-item">
-      <div class="tl-nodo">
-        <span class="tl-nodo-label">DÍA</span>
-        <span class="tl-nodo-num">${limpiarTexto(d.numero)}</span>
-      </div>
-      <div class="tl-card">
-        <div class="tl-texto">${limpiarTexto(d.texto)}</div>
-      </div>
-    </div>`;
-  });
-  return h + "</div>";
-}
-
-function renderSemanas(sems) {
-  if (!sems.length) return "";
-  const BG = ["#0a0a0a", "#dc2626", "#1a1a1a", "#7f1d1d"];
-  let h = '<div class="semanas-grid">';
-  sems.forEach((s, i) => {
-    h += `<div class="sem-card">
-      <div class="sem-header" style="background:${BG[i % BG.length]}">
-        <span class="sem-num-bg">${limpiarTexto(s.numero)}</span>
-        <div class="sem-info">
-          <span class="sem-label">SEMANA</span>
-          <span class="sem-obj">${limpiarTexto(s.objetivo || "Ejecución")}</span>
-        </div>
-      </div>
-      <div class="sem-body">
-        <div class="sem-acc-label">ACCIÓN</div>
-        <div class="sem-acc-texto">${limpiarTexto(s.accion)}</div>
-      </div>
-    </div>`;
-  });
-  return h + "</div>";
-}
-
-function renderIdeas(ideas) {
-  if (!ideas.length) return "";
-  const BG = ["#0a0a0a", "#dc2626", "#1a1a1a", "#7f1d1d", "#2c2c2c"];
-  return ideas.map((idea, i) => `
-  <div class="idea-card">
-    <div class="idea-lat" style="background:${BG[i % BG.length]}">
-      <span class="idea-lat-label">IDEA</span>
-      <span class="idea-lat-num">${limpiarTexto(idea.numero)}</span>
-    </div>
-    <div class="idea-cuerpo">
-      <div class="idea-gancho-box">
-        <div class="idea-gancho-label">GANCHO</div>
-        <div class="idea-gancho">"${limpiarTexto(idea.gancho)}"</div>
-      </div>
-      <div class="idea-meta">
-        ${idea.tema ? `<div class="idea-col"><div class="idea-col-label">TEMA</div><div class="idea-col-val">${limpiarTexto(idea.tema)}</div></div>` : ""}
-        ${idea.objetivo ? `<div class="idea-col"><div class="idea-col-label">OBJETIVO</div><div class="idea-col-val">${limpiarTexto(idea.objetivo)}</div></div>` : ""}
-      </div>
-    </div>
-  </div>`).join("");
-}
-
-function renderSiEntonces(items) {
-  if (!items.length) return "";
-  return items.map((se, i) => `
-  <div class="se-bloque">
-    <div class="se-num">ESCENARIO ${String(i + 1).padStart(2, "0")}</div>
-    <div class="se-flujo">
-      <div class="se-si">
-        <div class="se-si-label">CONDICIÓN</div>
-        <div class="se-si-texto">Si ${limpiarTexto(se.condicion)}</div>
-      </div>
-      <div class="se-flecha">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="se-flecha-label">ENTONCES</span>
-      </div>
-      <div class="se-entonces">
-        <div class="se-entonces-label">ACCIÓN</div>
-        <div class="se-entonces-texto">${limpiarTexto(se.accion) || "Ver plan"}</div>
-      </div>
-    </div>
-  </div>`).join("");
-}
-
-function renderMensajes(msjs) {
-  if (!msjs.length) return "";
-  return msjs.map((m, i) => {
-    const osc = i % 2 !== 0;
-    return `<div class="msj-card ${osc ? "msj-osc" : "msj-cla"}">
-      <div class="msj-comilla">"</div>
-      <div class="msj-num">${String(i + 1).padStart(2, "0")}</div>
-      <div class="msj-texto">${limpiarTexto(m)}</div>
-    </div>`;
-  }).join("");
-}
-
-function renderMetricas(items) {
-  if (!items.length) return "";
-  return items.map((m, i) => `
-  <div class="metrica-card">
-    <div class="metrica-badge">${i + 1}</div>
-    <div class="metrica-body">
-      <div class="metrica-que">${limpiarTexto(m.que)}</div>
-      ${m.porQue ? `<div class="metrica-row"><span class="metrica-label">POR QUÉ IMPORTA</span><div class="metrica-val">${limpiarTexto(m.porQue)}</div></div>` : ""}
-      ${m.decision ? `<div class="metrica-row"><span class="metrica-label">QUÉ DECISIÓN TOMAR</span><div class="metrica-val">${limpiarTexto(m.decision)}</div></div>` : ""}
-    </div>
-  </div>`).join("");
-}
-
-// ─────────────────────────────────────────────
-// PARSER
-// ─────────────────────────────────────────────
-function parsearTexto(textoCrudo) {
-  const texto = textoCrudo
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  const lineas = texto.split("\n");
-  const secciones = [];
-  let seccionActual = null;
+function procesarMarkdownAHTML(textoCrudo) {
+  const textoSeguro = limpiarTexto(textoCrudo);
+  const lineas = textoSeguro.split('\n');
+  let htmlResult = '';
   let enLista = false;
+  let ignorarResto = false;
+  let enCajaCierre = false;
+  let enCajaNaranja = false;
+  let saltarLinea = false;
 
-  let diasBuf = [], semanasBuf = [], ideasBuf = [], siEntoncesBuf = [];
-  let mensajesBuf = [], metricasBuf = [];
-  let ideaActual = null, metricaActual = null;
+  let diasBuffer = [];
+  let semanasBuffer = [];
+  let ideasBuffer = [];
+  let ideaActual = null;
+  let siEntoncesBuffer = [];
+  let mensajesBuffer = [];
+  let enDias = false;
+  let enSemanas = false;
+  let enIdeas = false;
+  let enSiEntonces = false;
+  let enMensajes = false;
 
-  let enDias = false, enSemanas = false, enIdeas = false;
-  let enSiEntonces = false, enMensajes = false, enMetricas = false;
-
-  const IGNORAR = [
+  const prefijosIgnorar = [
     "CASO DEL CLIENTE:", "EL NEGOCIO:", "EL PROBLEMA ELEGIDO",
     "LAS BASES DEL NEGOCIO:", "EL PUNTO DE BLOQUEO:", "EL OBJETIVO A 90",
-    "ANÁLISIS INICIAL:", "ANÁLISIS ESTRATÉGICO:", "ANÁLISIS COMPLETO:",
+    "ANÁLISIS INICIAL:", "ANÁLISIS ESTRATÉGICO:", "MAPA DE EJECUCIÓN",
     "CASO ORIGINAL:", "RECURSOS DISPONIBLES", "FEEDBACK DEL USUARIO:",
+    "ANÁLISIS COMPLETO\n", "DIAGNÓSTICO:", "DIAGNÓSTICO INICIAL:",
     "Aquí tienes el análisis", "🚀 Etapa privada", "🧠 Para armar",
     "🔎 Feedback", "Del 1 al 10", "El resultado depende",
-    "¿Tenés más TIEMPO", "¿Este análisis", "¿Qué punto específico",
-    "Logo Problema Cero", "PROBLEMA CERO", "Lic. Hernán",
-    "Director Estratégico", "Mi objetivo no es"
+    "¿Tenés más TIEMPO", "¿Este análisis", "¿Qué punto específico"
   ];
-
-  const RX_TITULO = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN.*|CONTENIDO QUE DEBER[ÍI]A CREAR|MENSAJES DE VENTA.*|M[ÉE]TRICA.*MIRAR|SI\s*\/\s*ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCI[ÓO]N CONCRETA|IMPACTO|CIERRE)$/i;
-
-  const RX_CTA = /ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL/i;
 
   let contenidoEmpezado = false;
 
-  function kickerPara(titulo) {
-    const t = titulo.toUpperCase();
-    if (/RESUMEN|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|IMPACTO|CIERRE/.test(t)) return "Lectura Estratégica";
-    if (/MAPA EJECUTIVO|PRIORIDAD|DEJAR|CORREGIR|SI.*ENTONCES/.test(t)) return "Arquitectura de Decisiones";
-    if (/PLAN.*7|PLAN.*30|PLAN DE ACCIÓN/.test(t)) return "Plan de Ejecución";
-    if (/CONTENIDO|MENSAJES|MÉTRICA|METRICA/.test(t)) return "Ejecución Comercial";
-    if (/ACCIÓN CONCRETA/.test(t)) return "Próximos Pasos";
-    return "Análisis Estratégico";
-  }
-
   function volcarBuffers() {
-    if (!seccionActual) return;
-    if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
-    if (enDias && diasBuf.length) { seccionActual.html += renderDias(diasBuf); diasBuf = []; enDias = false; }
-    if (enSemanas && semanasBuf.length) { seccionActual.html += renderSemanas(semanasBuf); semanasBuf = []; enSemanas = false; }
+    if (enDias && diasBuffer.length) {
+      htmlResult += renderDias(diasBuffer);
+      diasBuffer = []; enDias = false;
+    }
+    if (enSemanas && semanasBuffer.length) {
+      htmlResult += renderSemanas(semanasBuffer);
+      semanasBuffer = []; enSemanas = false;
+    }
     if (enIdeas) {
-      if (ideaActual) { ideasBuf.push(ideaActual); ideaActual = null; }
-      if (ideasBuf.length) { seccionActual.html += renderIdeas(ideasBuf); ideasBuf = []; }
+      if (ideaActual) { ideasBuffer.push(ideaActual); ideaActual = null; }
+      if (ideasBuffer.length) { htmlResult += renderIdeas(ideasBuffer); ideasBuffer = []; }
       enIdeas = false;
     }
-    if (enSiEntonces && siEntoncesBuf.length) { seccionActual.html += renderSiEntonces(siEntoncesBuf); siEntoncesBuf = []; enSiEntonces = false; }
-    if (enMensajes && mensajesBuf.length) { seccionActual.html += renderMensajes(mensajesBuf); mensajesBuf = []; enMensajes = false; }
-    if (enMetricas) {
-      if (metricaActual) { metricasBuf.push(metricaActual); metricaActual = null; }
-      if (metricasBuf.length) { seccionActual.html += renderMetricas(metricasBuf); metricasBuf = []; }
-      enMetricas = false;
+    if (enSiEntonces && siEntoncesBuffer.length) {
+      htmlResult += renderSiEntonces(siEntoncesBuffer);
+      siEntoncesBuffer = []; enSiEntonces = false;
     }
-  }
-
-  function nuevaSeccion(titulo) {
-    volcarBuffers();
-    if (seccionActual) secciones.push(seccionActual);
-    seccionActual = { titulo, kicker: kickerPara(titulo), html: "" };
-    const t = titulo.toUpperCase();
-    enDias       = /PLAN.*7|PRÓXIMOS 7/.test(t) || (/PLAN DE ACCIÓN/.test(t) && !/30/.test(t));
-    enSemanas    = /PLAN.*30|PRÓXIMOS 30/.test(t) || (/PLAN DE ACCIÓN/.test(t) && /30/.test(t));
-    enIdeas      = /CONTENIDO QUE DEBER/.test(t);
-    enSiEntonces = /SI.*ENTONCES/.test(t);
-    enMensajes   = /MENSAJES DE VENTA/.test(t);
-    enMetricas   = /M[ÉE]TRICA/.test(t);
+    if (enMensajes && mensajesBuffer.length) {
+      htmlResult += renderMensajes(mensajesBuffer);
+      mensajesBuffer = []; enMensajes = false;
+    }
   }
 
   lineas.forEach(linea => {
-    const limpia = linea.trim();
+    if (ignorarResto) return;
+
+    let limpia = linea.trim();
     if (!limpia) return;
-    if (limpia.match(/^━+$/) || limpia.match(/^═+$/)) return;
-    if (IGNORAR.some(p => limpia.startsWith(p))) return;
 
-    if (RX_CTA.test(limpia)) {
+    if (prefijosIgnorar.some(p => limpia.startsWith(p))) {
+      saltarLinea = true;
+      return;
+    }
+
+    const esTitulo = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE)/i.test(limpia);
+
+    if (esTitulo) { contenidoEmpezado = true; saltarLinea = false; }
+    if (saltarLinea && !contenidoEmpezado) return;
+    if (!contenidoEmpezado && /^\d+\./.test(limpia)) return;
+    if (!contenidoEmpezado && limpia.length < 80 && !esTitulo) return;
+
+    if (limpia.includes("━━━━━━━━━━━━━━━━━━━━") || limpia === "•") {
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      return;
+    }
+
+    if (limpia === "ANÁLISIS COMPLETO:") {
       volcarBuffers();
-      if (seccionActual) secciones.push(seccionActual);
-      seccionActual = { titulo: "CTA", kicker: "", html: "", esCTA: true };
-      return;
-    }
-
-    const mT = limpia.match(RX_TITULO);
-    if (mT) {
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
+      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
+      htmlResult += '<div class="page-break"></div>';
+      htmlResult += `<div class="cover-interna">
+        <img src="https://www.problemacero.com.ar/logo.png" alt="Logo" class="logo-portada" onerror="this.style.display='none'">
+        <h1>PROBLEMA CERO</h1>
+        <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
+        <div class="diag-title">Mapa de <span class="rojo">Ejecución</span></div>
+        <div class="private">DOCUMENTO EJECUTIVO</div>
+        <div class="description">Un plan de acción diseñado para corregir la raíz del problema, ordenar prioridades absolutas y escalar el negocio en los próximos 30 días.</div>
+      </div>`;
       contenidoEmpezado = true;
-      nuevaSeccion(mT[1].trim().toUpperCase());
       return;
     }
 
-    if (!contenidoEmpezado) return;
-    if (!seccionActual) return;
-
-    // Subtítulos 👉
-    if (limpia.startsWith("👉")) {
-      if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
-      const sub = sinMd(limpia.replace(/^👉\s*/, ""));
-      if (/tu problema principal/i.test(sub)) {
-        seccionActual.html += `<div class="resumen-label">Tu problema principal:</div><div class="resumen-valor">${limpiarTexto(sub.replace(/^tu problema principal[:\s]*/i, ""))}</div>`;
-      } else if (/qué está pasando|que está pasando/i.test(sub)) {
-        seccionActual.html += `<div class="resumen-label">Qué está pasando:</div>`;
-      } else if (/qué deberías corregir|que deberías corregir/i.test(sub)) {
-        seccionActual.html += `<div class="resumen-label">Qué deberías corregir primero:</div>`;
-      } else {
-        seccionActual.html += `<p class="subtitulo-seccion">${limpiarTexto(sub)}</p>`;
-      }
+    if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
+      volcarBuffers();
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
+      enCajaCierre = true;
+      htmlResult += '<div class="page-break"></div>';
+      htmlResult += '<div class="contenedor-cierre"><div class="caja-premium-cierre">';
+      htmlResult += '<h2 class="cierre-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>';
       return;
     }
 
-    // Captura días
+    if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PUNTO DE PARTIDA") ||
+        limpia.includes("TU SIGUIENTE NIVEL DE EJECUCIÓN") ||
+        limpia.includes("TU SIGUIENTE NIVEL:")) {
+      volcarBuffers();
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
+      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
+      htmlResult += '<div class="page-break"></div>';
+      htmlResult += '<div class="contenedor-cierre"><div class="black-box-cta">';
+      htmlResult += '<h3>TU SIGUIENTE NIVEL DE EJECUCIÓN</h3>';
+      htmlResult += '<p>Detectar el bloqueo es vital, pero la transformación ocurre en la acción.</p>';
+      htmlResult += '<a href="https://problemacero.com.ar" class="btn-premium">DESBLOQUEAR RUTA DE 30 DÍAS</a>';
+      htmlResult += '</div></div>';
+      ignorarResto = true;
+      return;
+    }
+
+    if (limpia.includes("TU PRÓXIMO PASO:")) {
+      volcarBuffers();
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      htmlResult += '<div class="caja-cta-blanca"><p class="cta-titulo">TU PRÓXIMO PASO:</p>';
+      enCajaNaranja = true;
+      return;
+    }
+
+    const regexTitulos = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN[^a-z]*|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA[^a-z]*|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE)$/i;
+    const matchTitulo = limpia.match(regexTitulos);
+
+    if (matchTitulo) {
+      volcarBuffers();
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
+      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
+
+      const tituloLimpio = matchTitulo[1].trim().toUpperCase();
+
+      enDias       = tituloLimpio.includes("7 DÍAS") || (tituloLimpio.startsWith("PLAN DE ACCIÓN") && !tituloLimpio.includes("30"));
+      enSemanas    = tituloLimpio.includes("30 DÍAS") || (tituloLimpio.startsWith("PLAN DE ACCIÓN") && tituloLimpio.includes("30"));
+      enIdeas      = tituloLimpio.includes("CONTENIDO QUE DEBERÍA CREAR");
+      enSiEntonces = tituloLimpio.includes("SI / ENTONCES");
+      enMensajes   = tituloLimpio.includes("MENSAJES DE VENTA");
+
+      htmlResult += '<div class="page-break"></div>';
+
+      let kickerText = 'Lectura Estratégica';
+      if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
+      else if (["CONTENIDO QUE DEBERÍA CREAR","MENSAJES DE VENTA","MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
+      else if (tituloLimpio.startsWith("PLAN DE ACCIÓN")) kickerText = 'Arquitectura de Decisiones';
+
+      htmlResult += `<div class="editorial-header">
+        <div class="kicker">${kickerText}</div>
+        <h2 class="editorial-title">${tituloLimpio}</h2>
+        <div class="titulo-linea"></div>
+      </div>`;
+      return;
+    }
+
+    if (limpia.startsWith('👉')) {
+      if (enLista) { htmlResult += '</ul>'; enLista = false; }
+      htmlResult += `<p class="subtitulo-seccion">${sinMd(limpia.replace('👉','').trim())}</p>`;
+      return;
+    }
+
     if (enDias) {
-      const m = limpia.match(/^[-—*]?\s*\*{0,2}D[ií]a\s*(\d+)\*{0,2}[:\s]+(.+)/i);
-      if (m) { diasBuf.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
+      const m = limpia.match(/\*?\*?D[ií]a\s+(\d+)\*?\*?[:\s]+(.+)/i);
+      if (m) { diasBuffer.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
     }
 
-    // Captura semanas
     if (enSemanas) {
-      const m = limpia.match(/^[-—*]?\s*\*{0,2}Semana\s*(\d+)\*{0,2}[:\s]+(.+)/i);
+      const m = limpia.match(/\*?\*?Semana\s+(\d+)\*?\*?[:\s]+(.+)/i);
       if (m) {
         const resto = sinMd(m[2]);
-        const mObj = resto.match(/Objetivo[:\s]+([^.]+?)(?:\s+Acci[oó]n|$)/i);
+        const mObj = resto.match(/Objetivo[:\s]+([^.]+?)(?=\s*Acci[oó]n|\s*$)/i);
         const mAcc = resto.match(/Acci[oó]n[:\s]+(.+)/i);
-        semanasBuf.push({
+        semanasBuffer.push({
           numero: m[1],
-          objetivo: mObj ? mObj[1].trim() : resto.substring(0, 60),
+          objetivo: mObj ? mObj[1].trim() : resto.substring(0,50),
           accion: mAcc ? mAcc[1].trim() : resto
         });
         return;
       }
     }
 
-    // Captura ideas
     if (enIdeas) {
-      const mNum = limpia.match(/^[-—*]?\s*\*{0,2}Idea\s*(\d+)\*{0,2}[:\s]*$/i);
-      const mG   = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
-      const mT2  = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
-      const mO   = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
+      const mNum = limpia.match(/\*?\*?Idea\s+(\d+)\*?\*?[:\s]*$/i);
+      const mG   = limpia.match(/\*?\*?Gancho\*?\*?[:\s]+(.+)/i);
+      const mT   = limpia.match(/\*?\*?Tema\*?\*?[:\s]+(.+)/i);
+      const mO   = limpia.match(/\*?\*?Objetivo\*?\*?[:\s]+(.+)/i);
       if (mNum) {
-        if (ideaActual) ideasBuf.push(ideaActual);
-        ideaActual = { numero: mNum[1], gancho: "", tema: "", objetivo: "" };
+        if (ideaActual) ideasBuffer.push(ideaActual);
+        ideaActual = { numero: mNum[1], gancho:'', tema:'', objetivo:'' };
         return;
       }
-      if (mG) {
-        if (!ideaActual) ideaActual = { numero: String(ideasBuf.length + 1), gancho: "", tema: "", objetivo: "" };
-        ideaActual.gancho = sinMd(mG[1]); return;
-      }
-      if (mT2 && ideaActual) { ideaActual.tema = sinMd(mT2[1]); return; }
-      if (mO && ideaActual) {
-        ideaActual.objetivo = sinMd(mO[1]);
-        if (ideaActual.gancho && ideaActual.tema) { ideasBuf.push(ideaActual); ideaActual = null; }
-        return;
-      }
+      if (mG && ideaActual) { ideaActual.gancho   = sinMd(mG[1]); return; }
+      if (mT && ideaActual) { ideaActual.tema      = sinMd(mT[1]); return; }
+      if (mO && ideaActual) { ideaActual.objetivo  = sinMd(mO[1]); return; }
     }
 
-    // Captura si/entonces
     if (enSiEntonces) {
-      const m = limpia.match(/^[-—*]?\s*\*{0,2}Si\*{0,2}\s+(.*?),?\s+\*{0,2}entonces\*{0,2}\s+(.*)/i);
-      if (m) { siEntoncesBuf.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
+      const m = limpia.match(/\*?\*?Si\*?\*?\s+(.*?)[,\s]+\*?\*?entonces\*?\*?\s+(.*)/i);
+      if (m) { siEntoncesBuffer.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
     }
 
-    // Captura mensajes
     if (enMensajes) {
-      const m1 = limpia.match(/^[-—*]?\s*[""""](.+)[""""]/);
-      if (m1) { mensajesBuf.push(sinMd(m1[1])); return; }
-      if ((limpia.startsWith("- ") || limpia.startsWith("— ")) && limpia.length > 12) {
-        const msg = limpia.substring(2).replace(/^[""""]/,"").replace(/[""""]\s*$/,"").trim();
-        if (msg.length > 10) { mensajesBuf.push(sinMd(msg)); return; }
+      const m = limpia.match(/^[-—*]?\s*[""""](.+)[""""]/);
+      if (m) { mensajesBuffer.push(sinMd(m[1])); return; }
+      if (limpia.startsWith('- ') || limpia.startsWith('— ')) {
+        const msg = limpia.substring(2).replace(/^[""""]/,'').replace(/[""""]\s*$/,'').trim();
+        if (msg.length > 10) { mensajesBuffer.push(sinMd(msg)); return; }
       }
     }
 
-    // Captura métricas
-    if (enMetricas) {
-      const mQue = limpia.match(/\*{0,2}(?:Qué mirar|Métrica)\*{0,2}[:\s]+(.+)/i);
-      const mPQ  = limpia.match(/\*{0,2}Por qué importa\*{0,2}[:\s]+(.+)/i);
-      const mDec = limpia.match(/\*{0,2}Qué decisión tomar\*{0,2}[:\s]+(.+)/i);
-      if (mQue) { if (metricaActual) metricasBuf.push(metricaActual); metricaActual = { que: sinMd(mQue[1]), porQue: "", decision: "" }; return; }
-      if (mPQ && metricaActual) { metricaActual.porQue = sinMd(mPQ[1]); return; }
-      if (mDec && metricaActual) { metricaActual.decision = sinMd(mDec[1]); return; }
-    }
-
-    // Listas normales
-    if (limpia.startsWith("- ") || limpia.startsWith("* ") || limpia.startsWith("— ")) {
-      if (!enLista) { seccionActual.html += '<ul class="editorial-list">'; enLista = true; }
-      const itemTexto = limpia.substring(2).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      seccionActual.html += `<li class="list-item">${itemTexto}</li>`;
+    if (limpia.startsWith('- ') || limpia.startsWith('* ') || limpia.startsWith('— ')) {
+      if (!enLista) {
+        htmlResult += enCajaCierre ? '<ul class="cierre-list">' : '<ul class="editorial-list">';
+        enLista = true;
+      }
+      htmlResult += `<li class="list-item">${limpia.substring(2).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</li>`;
       return;
-    } else if (enLista) { seccionActual.html += "</ul>"; enLista = false; }
+    } else if (enLista) { htmlResult += '</ul>'; enLista = false; }
 
-    // Párrafo normal
-    if (!limpia.startsWith("<")) {
-      const p = limpia.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      seccionActual.html += `<p class="texto-editorial">${p}</p>`;
+    if (!limpia.startsWith('<')) {
+      const p = limpia.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      if (enCajaNaranja)     htmlResult += `<p class="cta-texto">${p}</p>`;
+      else if (enCajaCierre) htmlResult += `<p class="texto-cierre">${p}</p>`;
+      else                   htmlResult += `<p class="texto-editorial">${p}</p>`;
     }
   });
 
   volcarBuffers();
-  if (seccionActual) secciones.push(seccionActual);
-  return secciones;
+  if (enLista) htmlResult += '</ul>';
+  if (enCajaNaranja) htmlResult += '</div>';
+  if (enCajaCierre) htmlResult += '</div></div>';
+
+  return htmlResult;
 }
 
-// ─────────────────────────────────────────────
-// GENERAR HTML
-// ─────────────────────────────────────────────
-function generarHTML(texto) {
-  const secciones = parsearTexto(texto);
-
-  let paginasHTML = "";
-  secciones.forEach(sec => {
-    if (sec.esCTA) {
-      paginasHTML += `
-      <div class="pagina pagina-cta">
-        <div class="cta-inner">
-          <h2 class="cta-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>
-          <p class="cta-desc">Detectar el problema es importante. Pero el cambio aparece cuando sabés qué corregir primero, qué dejar de hacer y cómo ordenar los próximos pasos.</p>
-          <div class="cta-box">
-            <div class="cta-box-label">TU PRÓXIMO PASO:</div>
-            <p class="cta-box-texto">Volvé a la pestaña de la web <strong>problemacero.com.ar</strong> y tocá el botón para desbloquear tu Análisis Completo ahora mismo.</p>
-          </div>
-        </div>
-      </div>`;
-      return;
-    }
-    paginasHTML += `
-    <div class="pagina pagina-contenido">
-      <div class="editorial-header">
-        <div class="kicker">${limpiarTexto(sec.kicker)}</div>
-        <h2 class="editorial-title">${limpiarTexto(sec.titulo)}</h2>
-        <div class="titulo-linea"></div>
-      </div>
-      <div class="editorial-body">${sec.html}</div>
+function renderDias(dias) {
+  let h = '<div class="timeline"><div class="timeline-rail"></div>';
+  dias.forEach(d => {
+    h += `<div class="tl-item">
+      <div class="tl-nodo"><span class="tl-nodo-label">DÍA</span><span class="tl-nodo-num">${limpiarTexto(d.numero)}</span></div>
+      <div class="tl-card"><div class="tl-texto">${limpiarTexto(d.texto)}</div></div>
     </div>`;
   });
+  return h + '</div>';
+}
+
+function renderSemanas(sems) {
+  const BG = ['#0a0a0a','#dc2626','#1a1a1a','#7f1d1d'];
+  let h = '<div class="semanas-grid">';
+  sems.forEach((s,i) => {
+    h += `<div class="sem-card">
+      <div class="sem-header" style="background:${BG[i%BG.length]}">
+        <span class="sem-num-bg">${limpiarTexto(s.numero)}</span>
+        <div class="sem-info"><span class="sem-label">SEMANA</span><span class="sem-obj">${limpiarTexto(s.objetivo||'Ejecución')}</span></div>
+      </div>
+      <div class="sem-body"><div class="sem-acc-label">ACCIÓN</div><div class="sem-acc-texto">${limpiarTexto(s.accion)}</div></div>
+    </div>`;
+  });
+  return h + '</div>';
+}
+
+function renderIdeas(ideas) {
+  const BG = ['#0a0a0a','#dc2626','#1a1a1a','#7f1d1d','#2c2c2c'];
+  return ideas.map((idea,i) => `<div class="idea-card">
+    <div class="idea-lat" style="background:${BG[i%BG.length]}">
+      <span class="idea-lat-label">IDEA</span><span class="idea-lat-num">${limpiarTexto(idea.numero)}</span>
+    </div>
+    <div class="idea-cuerpo">
+      <div class="idea-gancho-box"><div class="idea-gancho-label">GANCHO</div><div class="idea-gancho">"${limpiarTexto(idea.gancho)}"</div></div>
+      <div class="idea-meta">
+        ${idea.tema?`<div class="idea-col"><div class="idea-col-label">TEMA</div><div class="idea-col-val">${limpiarTexto(idea.tema)}</div></div>`:''}
+        ${idea.objetivo?`<div class="idea-col"><div class="idea-col-label">OBJETIVO</div><div class="idea-col-val">${limpiarTexto(idea.objetivo)}</div></div>`:''}
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+function renderSiEntonces(items) {
+  return items.map((se,i) => `<div class="se-bloque">
+    <div class="se-num">ESCENARIO ${String(i+1).padStart(2,'0')}</div>
+    <div class="se-flujo">
+      <div class="se-si"><div class="se-si-label">CONDICIÓN</div><div class="se-si-texto">Si ${limpiarTexto(se.condicion)}</div></div>
+      <div class="se-flecha">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="se-flecha-label">ENTONCES</span>
+      </div>
+      <div class="se-entonces"><div class="se-entonces-label">ACCIÓN</div><div class="se-entonces-texto">${limpiarTexto(se.accion)||'Ver plan'}</div></div>
+    </div>
+  </div>`).join('');
+}
+
+function renderMensajes(msjs) {
+  return msjs.map((m,i) => {
+    const osc = i%2!==0;
+    return `<div class="msj-card ${osc?'msj-osc':'msj-cla'}">
+      <div class="msj-comilla">"</div>
+      <div class="msj-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="msj-texto">${limpiarTexto(m)}</div>
+    </div>`;
+  }).join('');
+}
+
+function generarPlantillaPDF(textoDiagnostico) {
+  const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
 
   return `<!DOCTYPE html>
 <html>
@@ -406,144 +343,127 @@ function generarHTML(texto) {
   <meta charset="utf-8">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root { --rojo: #dc2626; --negro: #0a0a0a; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: #fff; color: #111; }
-    .pagina { width: 210mm; min-height: 297mm; page-break-after: always; break-after: page; position: relative; overflow: hidden; }
-    .pagina-caratula { background: var(--negro); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 70px; color: #fff; }
-    .logo-portada { width: 160px; margin-bottom: 32px; }
-    .logo-fallback { width: 100px; height: 100px; background: #1a1a1a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 52px; font-weight: 900; color: #fff; margin-bottom: 32px; }
-    .logo-fallback span { color: var(--rojo); }
-    .caratula-brand { font-size: 22px; font-weight: 900; letter-spacing: 6px; color: var(--rojo); margin-bottom: 6px; }
-    .caratula-sub { font-size: 11px; letter-spacing: 3px; color: #888; margin-bottom: 4px; }
-    .caratula-tag { font-size: 10px; letter-spacing: 5px; color: #555; margin-bottom: 48px; }
-    .caratula-titulo { font-size: 62px; font-weight: 300; color: #fff; line-height: 1.1; margin-bottom: 36px; }
-    .caratula-divider { width: 100%; height: 1px; background: linear-gradient(to right, transparent, #444, transparent); margin: 20px 0; }
-    .caratula-desc { font-size: 18px; color: #aaa; line-height: 1.7; font-weight: 300; max-width: 520px; }
-    .caratula-firma { margin-top: 36px; }
-    .caratula-firma-label { font-size: 9px; letter-spacing: 4px; color: #555; margin-bottom: 6px; }
-    .caratula-firma-name { font-size: 20px; color: #fff; font-weight: 400; }
-    .pagina-contenido { padding: 64px 80px 80px 80px; }
-    .editorial-header { margin-bottom: 32px; }
-    .kicker { font-size: 10px; color: var(--rojo); text-transform: uppercase; letter-spacing: 4px; font-weight: 700; margin-bottom: 10px; }
-    .editorial-title { font-size: 36px; font-weight: 800; color: #111; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-    .titulo-linea { width: 52px; height: 5px; background: var(--rojo); }
-    .editorial-body { margin-top: 28px; }
-    .texto-editorial { font-size: 22px; line-height: 1.85; color: #111; font-weight: 400; margin-bottom: 20px; }
-    .subtitulo-seccion { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 12px; margin-top: 10px; }
-    strong { font-weight: 700; }
-    .resumen-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; color: var(--rojo); text-transform: uppercase; margin-bottom: 6px; margin-top: 20px; }
-    .resumen-valor { font-size: 22px; color: #111; line-height: 1.6; font-weight: 300; margin-bottom: 16px; }
-    .editorial-list { list-style: none; padding-left: 0; margin: 8px 0 24px 0; }
-    .list-item { position: relative; padding-left: 28px; margin-bottom: 18px; font-size: 22px; line-height: 1.8; color: #111; font-weight: 400; }
-    .editorial-list .list-item::before { content: "—"; color: var(--rojo); font-weight: 700; position: absolute; left: 0; top: 0; }
-    .timeline { position: relative; padding-left: 88px; margin-top: 8px; }
-    .timeline-rail { position: absolute; left: 30px; top: 8px; bottom: 8px; width: 4px; background: linear-gradient(to bottom, #dc2626, #333); border-radius: 2px; }
-    .tl-item { position: relative; margin-bottom: 14px; min-height: 66px; display: flex; align-items: center; }
-    .tl-nodo { position: absolute; left: -86px; width: 62px; height: 62px; background: var(--rojo); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(220,38,38,.4); }
-    .tl-nodo-label { font-size: 7px; letter-spacing: 2px; color: rgba(255,255,255,.65); text-transform: uppercase; }
-    .tl-nodo-num { font-size: 24px; font-weight: 900; color: #fff; line-height: 1; }
-    .tl-card { background: #fafafa; border: 1px solid #e8e8e8; border-left: 4px solid var(--rojo); border-radius: 0 6px 6px 0; padding: 14px 18px; flex: 1; }
-    .tl-texto { font-size: 20px; color: #111; line-height: 1.55; font-weight: 400; }
-    .semanas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
-    .sem-card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
-    .sem-header { padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
-    .sem-num-bg { font-size: 50px; font-weight: 900; color: rgba(255,255,255,.12); line-height: 1; flex-shrink: 0; }
-    .sem-info { display: flex; flex-direction: column; }
-    .sem-label { font-size: 8px; letter-spacing: 3px; color: rgba(255,255,255,.4); text-transform: uppercase; }
-    .sem-obj { font-size: 12px; font-weight: 700; color: #fff; text-transform: uppercase; margin-top: 3px; line-height: 1.3; }
-    .sem-body { padding: 14px 18px; background: #fafafa; }
-    .sem-acc-label { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: var(--rojo); text-transform: uppercase; margin-bottom: 5px; }
-    .sem-acc-texto { font-size: 16px; color: #111; line-height: 1.6; }
-    .idea-card { display: flex; border-radius: 8px; overflow: hidden; margin-bottom: 14px; min-height: 90px; }
-    .idea-lat { width: 66px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .idea-lat-label { font-size: 7px; letter-spacing: 2px; color: rgba(255,255,255,.4); text-transform: uppercase; }
-    .idea-lat-num { font-size: 30px; font-weight: 900; color: #fff; line-height: 1; }
-    .idea-cuerpo { flex: 1; border: 1px solid #e0e0e0; border-left: none; border-radius: 0 8px 8px 0; }
-    .idea-gancho-box { background: #f0f0f0; padding: 10px 16px; border-bottom: 1px solid #e0e0e0; }
-    .idea-gancho-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: var(--rojo); text-transform: uppercase; margin-bottom: 3px; }
-    .idea-gancho { font-size: 17px; font-weight: 700; color: #111; font-style: italic; line-height: 1.4; }
-    .idea-meta { display: flex; padding: 10px 16px; background: #fafafa; gap: 14px; }
-    .idea-col { flex: 1; }
-    .idea-col-label { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: #999; text-transform: uppercase; margin-bottom: 3px; }
-    .idea-col-val { font-size: 14px; color: #111; line-height: 1.4; }
-    .se-bloque { margin-bottom: 18px; }
-    .se-num { font-size: 9px; font-weight: 700; letter-spacing: 3px; color: #ccc; text-transform: uppercase; margin-bottom: 6px; }
-    .se-flujo { display: flex; align-items: stretch; }
-    .se-si { flex: 1; background: #f4f4f4; border: 2px solid #e0e0e0; border-right: none; border-radius: 8px 0 0 8px; padding: 16px 18px; }
-    .se-si-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: #aaa; text-transform: uppercase; margin-bottom: 6px; }
-    .se-si-texto { font-size: 17px; font-weight: 500; color: #111; line-height: 1.5; }
-    .se-flecha { background: var(--rojo); width: 52px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
-    .se-flecha-label { font-size: 7px; letter-spacing: 1px; color: rgba(255,255,255,.6); text-transform: uppercase; }
-    .se-entonces { flex: 1; background: var(--negro); border: 2px solid var(--negro); border-left: none; border-radius: 0 8px 8px 0; padding: 16px 18px; }
-    .se-entonces-label { font-size: 8px; font-weight: 700; letter-spacing: 3px; color: rgba(255,255,255,.35); text-transform: uppercase; margin-bottom: 6px; }
-    .se-entonces-texto { font-size: 17px; font-weight: 500; color: #fff; line-height: 1.5; }
-    .msj-card { position: relative; padding: 28px 32px 24px; border-radius: 8px; margin-bottom: 14px; }
-    .msj-cla { background: #fafafa; border: 1px solid #e0e0e0; }
-    .msj-osc { background: var(--negro); }
-    .msj-comilla { position: absolute; top: 4px; left: 14px; font-size: 80px; font-weight: 900; color: var(--rojo); opacity: .15; line-height: 1; font-family: Georgia, serif; }
-    .msj-num { position: absolute; top: 12px; right: 16px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #aaa; }
-    .msj-texto { font-size: 20px; font-weight: 500; line-height: 1.7; font-style: italic; position: relative; z-index: 1; padding-left: 6px; }
-    .msj-cla .msj-texto { color: #111; }
-    .msj-osc .msj-texto { color: #fff; }
-    .metrica-card { display: flex; gap: 20px; background: #f5f5f5; border-left: 5px solid var(--rojo); padding: 20px 22px; margin-bottom: 16px; border-radius: 0 8px 8px 0; align-items: flex-start; }
-    .metrica-badge { width: 40px; height: 40px; background: var(--rojo); border-radius: 50%; color: #fff; font-size: 17px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .metrica-body { flex: 1; }
-    .metrica-que { font-size: 19px; font-weight: 700; color: #111; margin-bottom: 10px; }
-    .metrica-row { margin-bottom: 8px; }
-    .metrica-label { font-size: 9px; letter-spacing: 2px; font-weight: 700; color: var(--rojo); text-transform: uppercase; display: block; margin-bottom: 2px; }
-    .metrica-val { font-size: 16px; color: #333; line-height: 1.5; }
-    .pagina-cta { background: var(--negro); display: flex; align-items: center; justify-content: center; padding: 80px; }
-    .cta-inner { max-width: 520px; text-align: center; }
-    .cta-titulo { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid var(--rojo); padding-bottom: 20px; margin-bottom: 28px; }
-    .cta-desc { font-size: 20px; color: #aaa; line-height: 1.7; font-weight: 300; margin-bottom: 36px; }
-    .cta-box { background: #1a1a1a; border-left: 4px solid var(--rojo); padding: 24px 28px; text-align: left; }
-    .cta-box-label { font-size: 10px; letter-spacing: 3px; color: var(--rojo); font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
-    .cta-box-texto { font-size: 18px; color: #ddd; line-height: 1.6; font-weight: 300; }
+    :root{--rojo:#dc2626;--negro:#0a0a0a;--texto:#111111;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;color:var(--texto);background:#fff;}
+    .cover,.cover-interna{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background-color:var(--negro);color:#fff;padding:60px;page-break-after:always;}
+    .logo-portada{width:180px;margin-bottom:36px;}
+    .cover h1,.cover-interna h1{font-size:36px;color:var(--rojo);letter-spacing:4px;font-weight:700;margin-bottom:10px;}
+    .cover .subtitle,.cover-interna .subtitle{font-size:16px;font-weight:300;color:#d1d5db;letter-spacing:1px;margin-bottom:6px;}
+    .cover .private,.cover-interna .private{font-size:12px;font-weight:600;color:#6b7280;letter-spacing:5px;text-transform:uppercase;margin-bottom:44px;}
+    .cover .diag-title,.cover-interna .diag-title{font-size:54px;font-weight:300;line-height:1.15;margin-bottom:36px;color:#fff;}
+    .rojo{color:var(--rojo);font-weight:700;}
+    .cover .description,.cover-interna .description{font-size:19px;color:#9ca3af;max-width:580px;border-top:1px solid #334155;border-bottom:1px solid #334155;padding:22px 0;line-height:1.7;font-weight:300;}
+    .cover-footer{margin-top:44px;text-align:center;}
+    .cover-footer .label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;font-weight:600;}
+    .cover-footer .value{font-size:19px;color:#fff;font-weight:400;}
+    .page-content{padding:70px 80px;}
+    .page-break{page-break-before:always;height:1px;}
+    .editorial-header{margin-bottom:36px;}
+    .kicker{font-size:11px;color:var(--rojo);text-transform:uppercase;letter-spacing:4px;font-weight:700;margin-bottom:10px;}
+    .editorial-title{color:#111;font-size:34px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+    .titulo-linea{width:52px;height:5px;background:var(--rojo);margin-bottom:32px;}
+    .texto-editorial{font-size:23px;line-height:1.85;color:#111;font-weight:400;margin-bottom:22px;}
+    .subtitulo-seccion{font-size:21px;font-weight:700;color:#111;margin-bottom:14px;margin-top:12px;}
+    strong{font-weight:700;color:#000;}
+    .editorial-list{list-style:none;padding-left:0;margin:12px 0 28px 0;}
+    .list-item{position:relative;padding-left:30px;margin-bottom:18px;font-size:23px;line-height:1.85;color:#111;font-weight:400;}
+    .editorial-list .list-item::before{content:"—";color:var(--rojo);font-weight:700;position:absolute;left:0;top:0;}
+    .timeline{position:relative;padding-left:82px;margin-bottom:8px;}
+    .timeline-rail{position:absolute;left:26px;top:10px;bottom:10px;width:4px;background:linear-gradient(to bottom,#dc2626,#333);border-radius:2px;}
+    .tl-item{position:relative;margin-bottom:12px;min-height:64px;display:flex;align-items:center;}
+    .tl-nodo{position:absolute;left:-82px;width:62px;height:62px;background:var(--rojo);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(220,38,38,.4);}
+    .tl-nodo-label{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.65);text-transform:uppercase;}
+    .tl-nodo-num{font-size:23px;font-weight:900;color:#fff;line-height:1;}
+    .tl-card{background:#fafafa;border:1px solid #e8e8e8;border-left:4px solid var(--rojo);border-radius:0 6px 6px 0;padding:14px 18px;flex:1;display:flex;align-items:center;}
+    .tl-texto{font-size:20px;font-weight:400;color:#111;line-height:1.5;}
+    .semanas-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .sem-card{border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;}
+    .sem-header{padding:14px 16px;display:flex;align-items:center;gap:10px;}
+    .sem-num-bg{font-size:46px;font-weight:900;color:rgba(255,255,255,.12);line-height:1;flex-shrink:0;}
+    .sem-info{display:flex;flex-direction:column;}
+    .sem-label{font-size:8px;letter-spacing:3px;color:rgba(255,255,255,.4);text-transform:uppercase;}
+    .sem-obj{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;margin-top:2px;line-height:1.3;}
+    .sem-body{padding:12px 16px;background:#fafafa;}
+    .sem-acc-label{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--rojo);text-transform:uppercase;margin-bottom:5px;}
+    .sem-acc-texto{font-size:15px;color:#111;line-height:1.55;}
+    .idea-card{display:flex;border-radius:8px;overflow:hidden;margin-bottom:12px;min-height:86px;}
+    .idea-lat{width:66px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .idea-lat-label{font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;}
+    .idea-lat-num{font-size:30px;font-weight:900;color:#fff;line-height:1;}
+    .idea-cuerpo{flex:1;border:1px solid #e0e0e0;border-left:none;border-radius:0 8px 8px 0;}
+    .idea-gancho-box{background:#f0f0f0;padding:10px 16px;border-bottom:1px solid #e0e0e0;}
+    .idea-gancho-label{font-size:8px;font-weight:700;letter-spacing:3px;color:var(--rojo);text-transform:uppercase;margin-bottom:3px;}
+    .idea-gancho{font-size:16px;font-weight:700;color:#111;font-style:italic;line-height:1.4;}
+    .idea-meta{display:flex;padding:8px 16px;background:#fafafa;gap:12px;}
+    .idea-col{flex:1;}
+    .idea-col-label{font-size:7px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase;margin-bottom:2px;}
+    .idea-col-val{font-size:13px;color:#111;line-height:1.4;}
+    .se-bloque{margin-bottom:16px;}
+    .se-num{font-size:9px;font-weight:700;letter-spacing:3px;color:#ccc;text-transform:uppercase;margin-bottom:6px;}
+    .se-flujo{display:flex;align-items:stretch;}
+    .se-si{flex:1;background:#f4f4f4;border:2px solid #e0e0e0;border-right:none;border-radius:8px 0 0 8px;padding:14px 16px;}
+    .se-si-label{font-size:8px;font-weight:700;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:5px;}
+    .se-si-texto{font-size:17px;font-weight:500;color:#111;line-height:1.5;}
+    .se-flecha{background:var(--rojo);width:50px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+    .se-flecha-label{font-size:7px;letter-spacing:1px;color:rgba(255,255,255,.55);text-transform:uppercase;}
+    .se-entonces{flex:1;background:var(--negro);border:2px solid var(--negro);border-left:none;border-radius:0 8px 8px 0;padding:14px 16px;}
+    .se-entonces-label{font-size:8px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:5px;}
+    .se-entonces-texto{font-size:17px;font-weight:500;color:#fff;line-height:1.5;}
+    .msj-card{position:relative;padding:28px 32px 24px;border-radius:8px;margin-bottom:14px;}
+    .msj-cla{background:#fafafa;border:1px solid #e0e0e0;}
+    .msj-osc{background:var(--negro);}
+    .msj-comilla{position:absolute;top:4px;left:14px;font-size:80px;font-weight:900;color:var(--rojo);opacity:.15;line-height:1;font-family:Georgia,serif;}
+    .msj-num{position:absolute;top:12px;right:16px;font-size:10px;font-weight:700;letter-spacing:2px;color:#aaa;}
+    .msj-texto{font-size:20px;font-weight:500;line-height:1.7;font-style:italic;position:relative;z-index:1;padding-left:6px;}
+    .msj-cla .msj-texto{color:#111;}
+    .msj-osc .msj-texto{color:#fff;}
+    .contenedor-cierre{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:70vh;}
+    .caja-premium-cierre{background-color:var(--negro);color:#fff;border:1px solid #334155;padding:54px;width:100%;text-align:center;}
+    .cierre-titulo{color:#fff;font-size:24px;text-transform:uppercase;border-bottom:2px solid var(--rojo);padding-bottom:18px;margin-bottom:26px;letter-spacing:2px;font-weight:700;}
+    .texto-cierre{color:#e5e7eb;font-size:23px;line-height:1.85;margin-bottom:18px;font-weight:300;}
+    .cierre-list{list-style:none;padding-left:0;margin:10px 0 20px 0;}
+    .cierre-list .list-item{position:relative;padding-left:30px;margin-bottom:14px;font-size:19px;color:#d1d5db;font-weight:300;line-height:1.7;}
+    .cierre-list .list-item::before{content:"—";color:var(--rojo);position:absolute;left:0;top:0;}
+    .caja-cta-blanca{background:#f9fafb;border:1px solid #e5e7eb;border-left:4px solid var(--rojo);padding:28px 32px;margin-top:32px;}
+    .cta-titulo{color:var(--rojo);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+    .cta-texto{color:#111;font-size:19px;font-weight:400;line-height:1.7;}
+    .black-box-cta{background-color:var(--negro);color:#fff;padding:54px;border:1px solid #334155;border-radius:6px;width:100%;text-align:center;}
+    .black-box-cta h3{font-size:22px;font-weight:700;letter-spacing:2px;margin-bottom:20px;color:#fff;text-transform:uppercase;border-bottom:2px solid var(--rojo);padding-bottom:18px;display:inline-block;}
+    .black-box-cta p{font-size:19px;font-weight:300;line-height:1.7;color:#e5e7eb;margin:0 auto 36px auto;max-width:80%;}
+    .btn-premium{display:inline-block;background-color:var(--rojo);color:#fff;text-decoration:none;padding:16px 40px;font-weight:700;font-size:17px;letter-spacing:1px;border-radius:4px;text-transform:uppercase;}
   </style>
 </head>
 <body>
-  <div class="pagina pagina-caratula">
-    ${getLogoTag()}
-    <div class="caratula-brand">PROBLEMA CERO</div>
-    <div class="caratula-sub">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
-    <div class="caratula-tag">I N F O R M E &nbsp; P R I V A D O</div>
-    <div class="caratula-titulo">Diagnóstico<br>estratégico</div>
-    <div class="caratula-divider"></div>
-    <div class="caratula-desc">Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.</div>
-    <div class="caratula-firma">
-      <div class="caratula-firma-label">D I R E C C I Ó N &nbsp; E S T R A T É G I C A</div>
-      <div class="caratula-firma-name">Lic. Hernán Mariano Waisman</div>
+  <div class="cover">
+    <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
+    <h1>PROBLEMA CERO</h1>
+    <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
+    <div class="private">INFORME PRIVADO</div>
+    <div class="diag-title">Diagnóstico<br>estratégico</div>
+    <div class="description">Una lectura estratégica diseñada para detectar el bloqueo principal, ordenar prioridades y transformar confusión en dirección concreta.</div>
+    <div class="cover-footer">
+      <div class="label">Dirección Estratégica</div>
+      <div class="value">Lic. Hernán Mariano Waisman</div>
     </div>
   </div>
-  ${paginasHTML}
+  <div class="page-content">${contenidoHTML}</div>
 </body>
 </html>`;
 }
 
-// ─────────────────────────────────────────────
-// RUTA PRINCIPAL
-// ─────────────────────────────────────────────
 app.post("/*", async (req, res) => {
   let browser = null;
   try {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
     if (!diagnostico) return res.status(400).json({ error: "No se envió texto para el PDF" });
 
-    const htmlFinal = generarHTML(diagnostico);
+    const htmlFinal = generarPlantillaPDF(diagnostico);
 
     browser = await puppeteer.launch({
       headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-zygote",
-        "--single-process"
-      ]
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
     });
-
     const page = await browser.newPage();
     await page.setContent(htmlFinal, { waitUntil: "networkidle0" });
 
@@ -553,10 +473,7 @@ app.post("/*", async (req, res) => {
       margin: { top: "0px", bottom: "72px", left: "0px", right: "0px" },
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
-      footerTemplate: `<div style="font-size:11px;width:100%;color:#555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-        <span style="font-weight:700;color:#dc2626;letter-spacing:3px;">PROBLEMA CERO</span>
-        <span>PÁGINA <span class="pageNumber"></span></span>
-      </div>`
+      footerTemplate: `<div style="font-size:11px;width:100%;color:#555555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><span style="font-weight:600;">PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
     });
 
     res.set({
@@ -575,4 +492,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v5.1 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.2 activo en puerto ${PORT}`));
