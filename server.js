@@ -80,14 +80,9 @@ function procesarMarkdownAHTML(textoCrudo) {
 
   lineas.forEach(linea => {
     if (ignorarResto) return;
-
     let limpia = linea.trim();
     if (!limpia) return;
-
-    if (prefijosIgnorar.some(p => limpia.startsWith(p))) {
-      saltarLinea = true;
-      return;
-    }
+    if (prefijosIgnorar.some(p => limpia.startsWith(p))) { saltarLinea = true; return; }
 
     const esTitulo = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE)/i.test(limpia);
 
@@ -106,14 +101,14 @@ function procesarMarkdownAHTML(textoCrudo) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += `<div class="cover-interna">
-        <img src="https://www.problemacero.com.ar/logo.png" alt="Logo" class="logo-portada" onerror="this.style.display='none'">
-        <h1>PROBLEMA CERO</h1>
-        <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
-        <div class="diag-title">Mapa de <span class="rojo">Ejecución</span></div>
-        <div class="private">DOCUMENTO EJECUTIVO</div>
-        <div class="description">Un plan de acción diseñado para corregir la raíz del problema, ordenar prioridades absolutas y escalar el negocio en los próximos 30 días.</div>
+      htmlResult += '<div style="page-break-before:always;break-before:page;"></div>';
+      htmlResult += `<div style="height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background-color:#0a0a0a;color:#fff;padding:60px;">
+        <img src="https://www.problemacero.com.ar/logo.png" alt="Logo" style="width:180px;margin-bottom:36px;" onerror="this.style.display='none'">
+        <h1 style="font-size:36px;color:#dc2626;letter-spacing:4px;font-weight:700;margin-bottom:10px;">PROBLEMA CERO</h1>
+        <div style="font-size:16px;font-weight:300;color:#d1d5db;letter-spacing:1px;margin-bottom:6px;">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
+        <div style="font-size:54px;font-weight:300;line-height:1.15;margin-bottom:36px;color:#fff;">Mapa de <span style="color:#dc2626;font-weight:700;">Ejecución</span></div>
+        <div style="font-size:12px;font-weight:600;color:#6b7280;letter-spacing:5px;text-transform:uppercase;margin-bottom:44px;">DOCUMENTO EJECUTIVO</div>
+        <div style="font-size:19px;color:#9ca3af;max-width:580px;border-top:1px solid #334155;border-bottom:1px solid #334155;padding:22px 0;line-height:1.7;font-weight:300;">Un plan de acción diseñado para corregir la raíz del problema, ordenar prioridades absolutas y escalar el negocio en los próximos 30 días.</div>
       </div>`;
       contenidoEmpezado = true;
       return;
@@ -124,7 +119,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       enCajaCierre = true;
-      htmlResult += '<div class="page-break"></div>';
+      htmlResult += '<div style="page-break-before:always;break-before:page;"></div>';
       htmlResult += '<div class="contenedor-cierre"><div class="caja-premium-cierre">';
       htmlResult += '<h2 class="cierre-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>';
       return;
@@ -137,7 +132,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-      htmlResult += '<div class="page-break"></div>';
+      htmlResult += '<div style="page-break-before:always;break-before:page;"></div>';
       htmlResult += '<div class="contenedor-cierre"><div class="black-box-cta">';
       htmlResult += '<h3>TU SIGUIENTE NIVEL DE EJECUCIÓN</h3>';
       htmlResult += '<p>Detectar el bloqueo es vital, pero la transformación ocurre en la acción.</p>';
@@ -172,18 +167,17 @@ function procesarMarkdownAHTML(textoCrudo) {
       enSiEntonces = tituloLimpio.includes("SI / ENTONCES");
       enMensajes   = tituloLimpio.includes("MENSAJES DE VENTA");
 
-      htmlResult += '<div class="seccion-wrapper"><div class="page-break"></div>';
-
       let kickerText = 'Lectura Estratégica';
       if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
       else if (["CONTENIDO QUE DEBERÍA CREAR","MENSAJES DE VENTA","MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
       else if (tituloLimpio.startsWith("PLAN DE ACCIÓN")) kickerText = 'Arquitectura de Decisiones';
 
-      htmlResult += `<div class="editorial-header">
-        <div class="kicker">${kickerText}</div>
-        <h2 class="editorial-title">${tituloLimpio}</h2>
-        <div class="titulo-linea"></div>
-      </div>`;
+      htmlResult += `<div style="page-break-before:always;break-before:page;padding:70px 80px 0 80px;">
+        <div class="editorial-header">
+          <div class="kicker">${kickerText}</div>
+          <h2 class="editorial-title">${tituloLimpio}</h2>
+          <div class="titulo-linea"></div>
+        </div>`;
       return;
     }
 
@@ -218,14 +212,10 @@ function procesarMarkdownAHTML(textoCrudo) {
       const mG   = limpia.match(/\*?\*?Gancho\*?\*?[:\s]+(.+)/i);
       const mT   = limpia.match(/\*?\*?Tema\*?\*?[:\s]+(.+)/i);
       const mO   = limpia.match(/\*?\*?Objetivo\*?\*?[:\s]+(.+)/i);
-      if (mNum) {
-        if (ideaActual) ideasBuffer.push(ideaActual);
-        ideaActual = { numero: mNum[1], gancho:'', tema:'', objetivo:'' };
-        return;
-      }
-      if (mG && ideaActual) { ideaActual.gancho   = sinMd(mG[1]); return; }
-      if (mT && ideaActual) { ideaActual.tema      = sinMd(mT[1]); return; }
-      if (mO && ideaActual) { ideaActual.objetivo  = sinMd(mO[1]); return; }
+      if (mNum) { if (ideaActual) ideasBuffer.push(ideaActual); ideaActual = { numero: mNum[1], gancho:'', tema:'', objetivo:'' }; return; }
+      if (mG && ideaActual) { ideaActual.gancho = sinMd(mG[1]); return; }
+      if (mT && ideaActual) { ideaActual.tema = sinMd(mT[1]); return; }
+      if (mO && ideaActual) { ideaActual.objetivo = sinMd(mO[1]); return; }
     }
 
     if (enSiEntonces) {
@@ -336,7 +326,6 @@ function renderMensajes(msjs) {
 
 function generarPlantillaPDF(textoDiagnostico) {
   const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
-
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -346,26 +335,22 @@ function generarPlantillaPDF(textoDiagnostico) {
     :root{--rojo:#dc2626;--negro:#0a0a0a;--texto:#111111;}
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Inter',sans-serif;color:var(--texto);background:#fff;}
-    .cover,.cover-interna{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background-color:var(--negro);color:#fff;padding:60px;page-break-after:always;}
+    .cover{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background-color:var(--negro);color:#fff;padding:60px;page-break-after:always;}
     .logo-portada{width:180px;margin-bottom:36px;}
-    .cover h1,.cover-interna h1{font-size:36px;color:var(--rojo);letter-spacing:4px;font-weight:700;margin-bottom:10px;}
-    .cover .subtitle,.cover-interna .subtitle{font-size:16px;font-weight:300;color:#d1d5db;letter-spacing:1px;margin-bottom:6px;}
-    .cover .private,.cover-interna .private{font-size:12px;font-weight:600;color:#6b7280;letter-spacing:5px;text-transform:uppercase;margin-bottom:44px;}
-    .cover .diag-title,.cover-interna .diag-title{font-size:54px;font-weight:300;line-height:1.15;margin-bottom:36px;color:#fff;}
-    .rojo{color:var(--rojo);font-weight:700;}
-    .cover .description,.cover-interna .description{font-size:19px;color:#9ca3af;max-width:580px;border-top:1px solid #334155;border-bottom:1px solid #334155;padding:22px 0;line-height:1.7;font-weight:300;}
+    .cover h1{font-size:36px;color:var(--rojo);letter-spacing:4px;font-weight:700;margin-bottom:10px;}
+    .cover .subtitle{font-size:16px;font-weight:300;color:#d1d5db;letter-spacing:1px;margin-bottom:6px;}
+    .cover .private{font-size:12px;font-weight:600;color:#6b7280;letter-spacing:5px;text-transform:uppercase;margin-bottom:44px;}
+    .cover .diag-title{font-size:54px;font-weight:300;line-height:1.15;margin-bottom:36px;color:#fff;}
+    .cover .description{font-size:19px;color:#9ca3af;max-width:580px;border-top:1px solid #334155;border-bottom:1px solid #334155;padding:22px 0;line-height:1.7;font-weight:300;}
     .cover-footer{margin-top:44px;text-align:center;}
     .cover-footer .label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;font-weight:600;}
     .cover-footer .value{font-size:19px;color:#fff;font-weight:400;}
-    .page-content{padding:0;}
-    .seccion-wrapper{padding:70px 80px;}
-    .page-break{page-break-before:always;break-before:page;display:block;clear:both;height:1px;}
     .editorial-header{margin-bottom:36px;}
     .kicker{font-size:11px;color:var(--rojo);text-transform:uppercase;letter-spacing:4px;font-weight:700;margin-bottom:10px;}
     .editorial-title{color:#111;font-size:34px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
     .titulo-linea{width:52px;height:5px;background:var(--rojo);margin-bottom:32px;}
-    .texto-editorial{font-size:23px;line-height:1.85;color:#111;font-weight:400;margin-bottom:22px;}
-    .subtitulo-seccion{font-size:21px;font-weight:700;color:#111;margin-bottom:14px;margin-top:12px;}
+    .texto-editorial{font-size:23px;line-height:1.85;color:#111;font-weight:400;margin-bottom:22px;padding:0 80px;}
+    .subtitulo-seccion{font-size:21px;font-weight:700;color:#111;margin-bottom:14px;margin-top:12px;padding:0 80px;}
     strong{font-weight:700;color:#000;}
     .editorial-list{list-style:none;padding-left:0;margin:12px 0 28px 0;}
     .list-item{position:relative;padding-left:30px;margin-bottom:18px;font-size:23px;line-height:1.85;color:#111;font-weight:400;}
@@ -419,7 +404,7 @@ function generarPlantillaPDF(textoDiagnostico) {
     .msj-texto{font-size:20px;font-weight:500;line-height:1.7;font-style:italic;position:relative;z-index:1;padding-left:6px;}
     .msj-cla .msj-texto{color:#111;}
     .msj-osc .msj-texto{color:#fff;}
-    .contenedor-cierre{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:70vh;}
+    .contenedor-cierre{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:70vh;padding:70px 80px;}
     .caja-premium-cierre{background-color:var(--negro);color:#fff;border:1px solid #334155;padding:54px;width:100%;text-align:center;}
     .cierre-titulo{color:#fff;font-size:24px;text-transform:uppercase;border-bottom:2px solid var(--rojo);padding-bottom:18px;margin-bottom:26px;letter-spacing:2px;font-weight:700;}
     .texto-cierre{color:#e5e7eb;font-size:23px;line-height:1.85;margin-bottom:18px;font-weight:300;}
@@ -448,7 +433,7 @@ function generarPlantillaPDF(textoDiagnostico) {
       <div class="value">Lic. Hernán Mariano Waisman</div>
     </div>
   </div>
-  <div class="page-content">${contenidoHTML}</div>
+  ${contenidoHTML}
 </body>
 </html>`;
 }
@@ -474,7 +459,7 @@ app.post("/*", async (req, res) => {
       margin: { top: "0px", bottom: "72px", left: "0px", right: "0px" },
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
-      footerTemplate: '<div style="font-size:11px;width:100%;color:#555;padding:0 80px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;font-family:Arial,sans-serif;"><span style="font-weight:700;color:#dc2626;letter-spacing:3px;">PROBLEMA CERO</span><span>PAGINA <span class="pageNumber"></span></span></div>' 
+      footerTemplate: '<div style="font-size:11px;width:100%;color:#555;padding:0 80px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;font-family:Arial,sans-serif;"><span style="font-weight:700;color:#dc2626;letter-spacing:3px;">PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>'
     });
 
     res.set({
