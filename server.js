@@ -105,20 +105,8 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
+    // ANÁLISIS COMPLETO ya no genera carátula interna — el plan llega solo
     if (limpia === "ANÁLISIS COMPLETO:") {
-      volcarBuffers();
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
-      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += `<div class="cover-interna">
-        <img src="https://www.problemacero.com.ar/logo.png" alt="Logo" class="logo-portada" onerror="this.style.display='none'">
-        <h1>PROBLEMA CERO</h1>
-        <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
-        <div class="diag-title">Mapa de <span class="rojo">Ejecución</span></div>
-        <div class="private">DOCUMENTO EJECUTIVO</div>
-        <div class="description">Un plan de acción diseñado para corregir la raíz del problema, ordenar prioridades absolutas y escalar el negocio en los próximos 30 días.</div>
-      </div>`;
       contenidoEmpezado = true;
       return;
     }
