@@ -53,6 +53,10 @@ function procesarMarkdownAHTML(textoCrudo) {
   ];
 
   let contenidoEmpezado = false;
+  // Si el texto empieza con secciones del plan, activar inmediatamente
+  if (textoSeguro.includes('MAPA EJECUTIVO') || textoSeguro.includes('PLAN DE ACCIÓN')) {
+    contenidoEmpezado = true;
+  }
 
   function volcarBuffers() {
     if (enDias && diasBuffer.length) {
