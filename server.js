@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v3.2");
+  res.send("Motor PDF Problema Cero v4.0");
 });
 
 function limpiarTexto(texto) {
@@ -29,58 +29,24 @@ function procesarMarkdownAHTML(textoCrudo) {
   let enCajaNaranja = false;
   let saltarLinea = false;
 
-  let diasBuffer = [];
-  let semanasBuffer = [];
-  let ideasBuffer = [];
-  let ideaActual = null;
-  let siEntoncesBuffer = [];
-  let mensajesBuffer = [];
-  let enDias = false;
-  let enSemanas = false;
-  let enIdeas = false;
-  let enSiEntonces = false;
-  let enMensajes = false;
-
   const prefijosIgnorar = [
     "CASO DEL CLIENTE:", "EL NEGOCIO:", "EL PROBLEMA ELEGIDO",
     "LAS BASES DEL NEGOCIO:", "EL PUNTO DE BLOQUEO:", "EL OBJETIVO A 90",
-    "ANÁLISIS INICIAL:", "ANÁLISIS ESTRATÉGICO:", "MAPA DE EJECUCIÓN",
+    "ANÁLISIS INICIAL:", "ANÁLISIS ESTRATÉGICO:", "ANÁLISIS COMPLETO:",
     "CASO ORIGINAL:", "RECURSOS DISPONIBLES", "FEEDBACK DEL USUARIO:",
-    "ANÁLISIS COMPLETO\n", "DIAGNÓSTICO:", "DIAGNÓSTICO INICIAL:",
     "Aquí tienes el análisis", "🚀 Etapa privada", "🧠 Para armar",
     "🔎 Feedback", "Del 1 al 10", "El resultado depende",
     "¿Tenés más TIEMPO", "¿Este análisis", "¿Qué punto específico"
   ];
 
   let contenidoEmpezado = false;
-  // Si el texto empieza con secciones del plan, activar inmediatamente
   if (textoSeguro.includes('MAPA EJECUTIVO') || textoSeguro.includes('PLAN DE ACCIÓN')) {
     contenidoEmpezado = true;
   }
 
-  function volcarBuffers() {
-    if (enDias && diasBuffer.length) {
-      htmlResult += renderDias(diasBuffer);
-      diasBuffer = []; enDias = false;
-    }
-    if (enSemanas && semanasBuffer.length) {
-      htmlResult += renderSemanas(semanasBuffer);
-      semanasBuffer = []; enSemanas = false;
-    }
-    if (enIdeas) {
-      if (ideaActual) { ideasBuffer.push(ideaActual); ideaActual = null; }
-      if (ideasBuffer.length) { htmlResult += renderIdeas(ideasBuffer); ideasBuffer = []; }
-      enIdeas = false;
-    }
-    if (enSiEntonces && siEntoncesBuffer.length) {
-      htmlResult += renderSiEntonces(siEntoncesBuffer);
-      siEntoncesBuffer = []; enSiEntonces = false;
-    }
-    if (enMensajes && mensajesBuffer.length) {
-      htmlResult += renderMensajes(mensajesBuffer);
-      mensajesBuffer = []; enMensajes = false;
-    }
-  }
+  // Nota: volcarBuffers ya no gestiona secciones visuales
+  // Las secciones visuales vienen de arrays JSON directamente
+  function volcarBuffers() {}
 
   lineas.forEach(linea => {
     if (ignorarResto) return;
@@ -93,7 +59,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    const esTitulo = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE)/i.test(limpia);
+    const esTitulo = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE|MÉTRICA QUE DEBERÍA MIRAR)/i.test(limpia);
 
     if (esTitulo) { contenidoEmpezado = true; saltarLinea = false; }
     if (saltarLinea && !contenidoEmpezado) return;
@@ -105,14 +71,12 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    // ANÁLISIS COMPLETO ya no genera carátula interna — el plan llega solo
     if (limpia === "ANÁLISIS COMPLETO:") {
       contenidoEmpezado = true;
       return;
     }
 
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
-      volcarBuffers();
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       enCajaCierre = true;
@@ -125,7 +89,6 @@ function procesarMarkdownAHTML(textoCrudo) {
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PUNTO DE PARTIDA") ||
         limpia.includes("TU SIGUIENTE NIVEL DE EJECUCIÓN") ||
         limpia.includes("TU SIGUIENTE NIVEL:")) {
-      volcarBuffers();
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
@@ -140,37 +103,29 @@ function procesarMarkdownAHTML(textoCrudo) {
     }
 
     if (limpia.includes("TU PRÓXIMO PASO:")) {
-      volcarBuffers();
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       htmlResult += '<div class="caja-cta-blanca"><p class="cta-titulo">TU PRÓXIMO PASO:</p>';
       enCajaNaranja = true;
       return;
     }
 
-    const regexTitulos = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|PLAN DE ACCIÓN[^a-z]*|CONTENIDO QUE DEBERÍA CREAR|MENSAJES DE VENTA[^a-z]*|MÉTRICA QUE DEBERÍA MIRAR|SI \/ ENTONCES|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE)$/i;
+    // Títulos — excluye secciones visuales que ahora vienen de JSON
+    const regexTitulos = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE|MÉTRICA QUE DEBERÍA MIRAR)$/i;
     const matchTitulo = limpia.match(regexTitulos);
 
     if (matchTitulo) {
-      volcarBuffers();
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
       if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
 
       const tituloLimpio = matchTitulo[1].trim().toUpperCase();
 
-      enDias       = tituloLimpio.includes("7 DÍAS") || (tituloLimpio.startsWith("PLAN DE ACCIÓN") && !tituloLimpio.includes("30"));
-      enSemanas    = tituloLimpio.includes("30 DÍAS") || (tituloLimpio.startsWith("PLAN DE ACCIÓN") && tituloLimpio.includes("30"));
-      enIdeas      = tituloLimpio.includes("CONTENIDO QUE DEBERÍA CREAR");
-      enSiEntonces = tituloLimpio.includes("SI / ENTONCES");
-      enMensajes   = tituloLimpio.includes("MENSAJES DE VENTA");
+      let kickerText = 'Lectura Estratégica';
+      if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
+      else if (["MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
+      else if (tituloLimpio.includes("CIERRE")) kickerText = 'Cierre Estratégico';
 
       htmlResult += '<div class="page-break"></div>';
-
-      let kickerText = 'Lectura Estratégica';
-      if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO","SI / ENTONCES"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
-      else if (["CONTENIDO QUE DEBERÍA CREAR","MENSAJES DE VENTA","MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
-      else if (tituloLimpio.startsWith("PLAN DE ACCIÓN")) kickerText = 'Arquitectura de Decisiones';
-
       htmlResult += `<div class="editorial-header">
         <div class="kicker">${kickerText}</div>
         <h2 class="editorial-title">${tituloLimpio}</h2>
@@ -183,60 +138,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
       htmlResult += `<p class="subtitulo-seccion">${sinMd(limpia.replace('👉','').trim())}</p>`;
       return;
-    }
-
-    if (enDias) {
-      const m = limpia.match(/^[-—*]?\s*\*{0,2}D[ií]a\s*(\d+)\*{0,2}[:\s]+(.+)/i);
-      if (m) { diasBuffer.push({ numero: m[1], texto: sinMd(m[2]) }); return; }
-    }
-
-    if (enSemanas) {
-      const m = limpia.match(/^[-—*]?\s*\*{0,2}Semana\s*(\d+)\*{0,2}[:\s]+(.+)/i);
-      if (m) {
-        const resto = sinMd(m[2]);
-        const mObj = resto.match(/Objetivo[:\s]+([^.]+?)(?=\s*Acci[oó]n|\s*$)/i);
-        const mAcc = resto.match(/Acci[oó]n[:\s]+(.+)/i);
-        semanasBuffer.push({
-          numero: m[1],
-          objetivo: mObj ? mObj[1].trim() : resto.substring(0,50),
-          accion: mAcc ? mAcc[1].trim() : resto
-        });
-        return;
-      }
-    }
-
-    if (enIdeas) {
-      const mNum = limpia.match(/^[-—*]?\s*\*{0,2}Idea\s*(\d+)\*{0,2}[:\s]*$/i);
-      const mG   = limpia.match(/\*{0,2}Gancho\*{0,2}[:\s]+(.+)/i);
-      const mT   = limpia.match(/\*{0,2}Tema\*{0,2}[:\s]+(.+)/i);
-      const mO   = limpia.match(/\*{0,2}Objetivo\*{0,2}[:\s]+(.+)/i);
-      if (mNum) {
-        if (ideaActual) ideasBuffer.push(ideaActual);
-        ideaActual = { numero: mNum[1], gancho:'', tema:'', objetivo:'' };
-        return;
-      }
-      // Formato real: cada Gancho inicia una nueva idea
-      if (mG) {
-        if (ideaActual) ideasBuffer.push(ideaActual);
-        ideaActual = { numero: String(ideasBuffer.length + 1), gancho: sinMd(mG[1]), tema:'', objetivo:'' };
-        return;
-      }
-      if (mT && ideaActual) { ideaActual.tema     = sinMd(mT[1]); return; }
-      if (mO && ideaActual) { ideaActual.objetivo = sinMd(mO[1]); return; }
-    }
-
-    if (enSiEntonces) {
-      const m = limpia.match(/^[-—*]?\s*\*{0,2}Si\*{0,2}\s+(.*?),?\s+\*{0,2}entonces\*{0,2}\s+(.*)/i);
-      if (m) { siEntoncesBuffer.push({ condicion: sinMd(m[1]), accion: sinMd(m[2]) }); return; }
-    }
-
-    if (enMensajes) {
-      const m = limpia.match(/^[-—*]?\s*[""""](.+)[""""]/);
-      if (m) { mensajesBuffer.push(sinMd(m[1])); return; }
-      if (limpia.startsWith('- ') || limpia.startsWith('— ')) {
-        const msg = limpia.replace(/^[-—]\s*/,'').replace(/^\d+\.\s*/,'').replace(/^[""""]/,'').replace(/[""""]\s*$/,'').trim();
-        if (msg.length > 10) { mensajesBuffer.push(sinMd(msg)); return; }
-      }
     }
 
     if (limpia.startsWith('- ') || limpia.startsWith('* ') || limpia.startsWith('— ')) {
@@ -256,7 +157,6 @@ function procesarMarkdownAHTML(textoCrudo) {
     }
   });
 
-  volcarBuffers();
   if (enLista) htmlResult += '</ul>';
   if (enCajaNaranja) htmlResult += '</div>';
   if (enCajaCierre) htmlResult += '</div></div>';
@@ -264,40 +164,47 @@ function procesarMarkdownAHTML(textoCrudo) {
   return htmlResult;
 }
 
+// ─────────────────────────────────────────────────────────────
+// RENDERS VISUALES — alimentados desde arrays JSON
+// ─────────────────────────────────────────────────────────────
+
 function renderDias(dias) {
+  if (!dias || !dias.length) return "";
   let h = '<div class="timeline"><div class="timeline-rail"></div>';
   dias.forEach(d => {
     h += `<div class="tl-item">
-      <div class="tl-nodo"><span class="tl-nodo-label">DÍA</span><span class="tl-nodo-num">${limpiarTexto(d.numero)}</span></div>
-      <div class="tl-card"><div class="tl-texto">${limpiarTexto(d.texto)}</div></div>
+      <div class="tl-nodo"><span class="tl-nodo-label">DÍA</span><span class="tl-nodo-num">${limpiarTexto(String(d.dia))}</span></div>
+      <div class="tl-card"><div class="tl-texto">${limpiarTexto(d.accion || "")}</div></div>
     </div>`;
   });
   return h + '</div>';
 }
 
 function renderSemanas(sems) {
+  if (!sems || !sems.length) return "";
   const BG = ['#0a0a0a','#dc2626','#1a1a1a','#7f1d1d'];
   let h = '<div class="semanas-grid">';
   sems.forEach((s,i) => {
     h += `<div class="sem-card">
       <div class="sem-header" style="background:${BG[i%BG.length]}">
-        <span class="sem-num-bg">${limpiarTexto(s.numero)}</span>
+        <span class="sem-num-bg">${limpiarTexto(String(s.semana))}</span>
         <div class="sem-info"><span class="sem-label">SEMANA</span><span class="sem-obj">${limpiarTexto(s.objetivo||'Ejecución')}</span></div>
       </div>
-      <div class="sem-body"><div class="sem-acc-label">ACCIÓN</div><div class="sem-acc-texto">${limpiarTexto(s.accion)}</div></div>
+      <div class="sem-body"><div class="sem-acc-label">ACCIÓN</div><div class="sem-acc-texto">${limpiarTexto(s.accion||"")}</div></div>
     </div>`;
   });
   return h + '</div>';
 }
 
 function renderIdeas(ideas) {
+  if (!ideas || !ideas.length) return "";
   const BG = ['#0a0a0a','#dc2626','#1a1a1a','#7f1d1d','#2c2c2c'];
   return ideas.map((idea,i) => `<div class="idea-card">
     <div class="idea-lat" style="background:${BG[i%BG.length]}">
-      <span class="idea-lat-label">IDEA</span><span class="idea-lat-num">${limpiarTexto(idea.numero)}</span>
+      <span class="idea-lat-label">IDEA</span><span class="idea-lat-num">${limpiarTexto(String(idea.numero||i+1))}</span>
     </div>
     <div class="idea-cuerpo">
-      <div class="idea-gancho-box"><div class="idea-gancho-label">GANCHO</div><div class="idea-gancho">"${limpiarTexto(idea.gancho)}"</div></div>
+      <div class="idea-gancho-box"><div class="idea-gancho-label">GANCHO</div><div class="idea-gancho">"${limpiarTexto(idea.gancho||"")}"</div></div>
       <div class="idea-meta">
         ${idea.tema?`<div class="idea-col"><div class="idea-col-label">TEMA</div><div class="idea-col-val">${limpiarTexto(idea.tema)}</div></div>`:''}
         ${idea.objetivo?`<div class="idea-col"><div class="idea-col-label">OBJETIVO</div><div class="idea-col-val">${limpiarTexto(idea.objetivo)}</div></div>`:''}
@@ -307,32 +214,91 @@ function renderIdeas(ideas) {
 }
 
 function renderSiEntonces(items) {
+  if (!items || !items.length) return "";
   return items.map((se,i) => `<div class="se-bloque">
     <div class="se-num">ESCENARIO ${String(i+1).padStart(2,'0')}</div>
     <div class="se-flujo">
-      <div class="se-si"><div class="se-si-label">CONDICIÓN</div><div class="se-si-texto">Si ${limpiarTexto(se.condicion)}</div></div>
+      <div class="se-si"><div class="se-si-label">CONDICIÓN</div><div class="se-si-texto">Si ${limpiarTexto(se.condicion||"")}</div></div>
       <div class="se-flecha">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="se-flecha-label">ENTONCES</span>
       </div>
-      <div class="se-entonces"><div class="se-entonces-label">ACCIÓN</div><div class="se-entonces-texto">${limpiarTexto(se.accion)||'Ver plan'}</div></div>
+      <div class="se-entonces"><div class="se-entonces-label">ACCIÓN</div><div class="se-entonces-texto">${limpiarTexto(se.accion||'Ver plan')}</div></div>
     </div>
   </div>`).join('');
 }
 
 function renderMensajes(msjs) {
+  if (!msjs || !msjs.length) return "";
   return msjs.map((m,i) => {
     const osc = i%2!==0;
+    // Compatible con objeto {numero, texto} o string directo
+    const textoMensaje = typeof m === 'object' ? (m.texto || "") : String(m);
     return `<div class="msj-card ${osc?'msj-osc':'msj-cla'}">
       <div class="msj-comilla">"</div>
-      <div class="msj-num">${String(i+1).padStart(2,'0')}</div>
-      <div class="msj-texto">${limpiarTexto(m)}</div>
+      <div class="msj-num">${String(i+1).padStart(2,'00')}</div>
+      <div class="msj-texto">${limpiarTexto(textoMensaje)}</div>
     </div>`;
   }).join('');
 }
 
-function generarPlantillaPDF(textoDiagnostico) {
-  const contenidoHTML = procesarMarkdownAHTML(textoDiagnostico);
+function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos, escenarios, mensajes) {
+  // Garantizar que todos los arrays son válidos
+  plan7Dias  = Array.isArray(plan7Dias)  ? plan7Dias  : [];
+  plan30Dias = Array.isArray(plan30Dias) ? plan30Dias : [];
+  contenidos = Array.isArray(contenidos) ? contenidos : [];
+  escenarios = Array.isArray(escenarios) ? escenarios : [];
+  mensajes   = Array.isArray(mensajes)   ? mensajes   : [];
+
+  const contenidoNarrativo = procesarMarkdownAHTML(textoDiagnostico);
+
+  // Renders desde JSON — directos, sin parser
+  const html7Dias    = renderDias(plan7Dias);
+  const html30Dias   = renderSemanas(plan30Dias);
+  const htmlIdeas    = renderIdeas(contenidos);
+  const htmlSiEnt    = renderSiEntonces(escenarios);
+  const htmlMensajes = renderMensajes(mensajes);
+
+  // Bloques visuales con títulos — solo si tienen contenido
+  const bloque7Dias = html7Dias ? `
+    <div class="page-break"></div>
+    <div class="editorial-header">
+      <div class="kicker">Plan de Ejecución</div>
+      <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 7 DÍAS</h2>
+      <div class="titulo-linea"></div>
+    </div>${html7Dias}` : "";
+
+  const bloque30Dias = html30Dias ? `
+    <div class="page-break"></div>
+    <div class="editorial-header">
+      <div class="kicker">Plan de Ejecución</div>
+      <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 30 DÍAS</h2>
+      <div class="titulo-linea"></div>
+    </div>${html30Dias}` : "";
+
+  const bloqueIdeas = htmlIdeas ? `
+    <div class="page-break"></div>
+    <div class="editorial-header">
+      <div class="kicker">Ejecución Comercial</div>
+      <h2 class="editorial-title">CONTENIDO QUE DEBERÍA CREAR</h2>
+      <div class="titulo-linea"></div>
+    </div>${htmlIdeas}` : "";
+
+  const bloqueMensajes = htmlMensajes ? `
+    <div class="page-break"></div>
+    <div class="editorial-header">
+      <div class="kicker">Ejecución Comercial</div>
+      <h2 class="editorial-title">MENSAJES DE VENTA LISTOS PARA USAR</h2>
+      <div class="titulo-linea"></div>
+    </div>${htmlMensajes}` : "";
+
+  const bloqueSiEnt = htmlSiEnt ? `
+    <div class="page-break"></div>
+    <div class="editorial-header">
+      <div class="kicker">Arquitectura de Decisiones</div>
+      <h2 class="editorial-title">SI / ENTONCES</h2>
+      <div class="titulo-linea"></div>
+    </div>${htmlSiEnt}` : "";
 
   return `<!DOCTYPE html>
 <html>
@@ -420,7 +386,6 @@ function generarPlantillaPDF(textoDiagnostico) {
     .cierre-titulo{color:#fff;font-size:24px;text-transform:uppercase;border-bottom:2px solid var(--rojo);padding-bottom:18px;margin-bottom:26px;letter-spacing:2px;font-weight:700;}
     .texto-cierre{color:#e5e7eb;font-size:23px;line-height:1.85;margin-bottom:18px;font-weight:300;}
     .cierre-list{list-style:none;padding-left:0;margin:10px 0 20px 0;}
-    .cierre-list .list-item{position:relative;padding-left:30px;margin-bottom:14px;font-size:19px;color:#d1d5db;font-weight:300;line-height:1.7;}
     .cierre-list .list-item::before{content:"—";color:var(--rojo);position:absolute;left:0;top:0;}
     .caja-cta-blanca{background:#f9fafb;border:1px solid #e5e7eb;border-left:4px solid var(--rojo);padding:28px 32px;margin-top:32px;}
     .cta-titulo{color:var(--rojo);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
@@ -444,7 +409,14 @@ function generarPlantillaPDF(textoDiagnostico) {
       <div class="value">Lic. Hernán Mariano Waisman</div>
     </div>
   </div>
-  <div class="page-content">${contenidoHTML}</div>
+  <div class="page-content">
+    ${contenidoNarrativo}
+    ${bloque7Dias}
+    ${bloque30Dias}
+    ${bloqueIdeas}
+    ${bloqueMensajes}
+    ${bloqueSiEnt}
+  </div>
 </body>
 </html>`;
 }
@@ -455,7 +427,15 @@ app.post("/*", async (req, res) => {
     const diagnostico = req.body.diagnostico || req.body.texto || req.body.problem;
     if (!diagnostico) return res.status(400).json({ error: "No se envió texto para el PDF" });
 
-    const htmlFinal = generarPlantillaPDF(diagnostico);
+    const plan7Dias  = Array.isArray(req.body.plan7Dias)  ? req.body.plan7Dias  : [];
+    const plan30Dias = Array.isArray(req.body.plan30Dias) ? req.body.plan30Dias : [];
+    const contenidos = Array.isArray(req.body.contenidos) ? req.body.contenidos : [];
+    const escenarios = Array.isArray(req.body.escenarios) ? req.body.escenarios : [];
+    const mensajes   = Array.isArray(req.body.mensajes)   ? req.body.mensajes   : [];
+
+    const htmlFinal = generarPlantillaPDF(
+      diagnostico, plan7Dias, plan30Dias, contenidos, escenarios, mensajes
+    );
 
     browser = await puppeteer.launch({
       headless: "new",
@@ -470,7 +450,7 @@ app.post("/*", async (req, res) => {
       margin: { top: "0px", bottom: "72px", left: "0px", right: "0px" },
       displayHeaderFooter: true,
       headerTemplate: "<div></div>",
-      footerTemplate: `<div style="font-size:11px;width:100%;color:#555555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><span style="font-weight:600;">PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
+      footerTemplate: `<div style="font-size:11px;width:100%;color:#555555;padding:0 80px;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;letter-spacing:1px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><span style="font-weight:700;color:#dc2626;letter-spacing:3px;">PROBLEMA CERO</span><span>PÁGINA <span class="pageNumber"></span></span></div>`
     });
 
     res.set({
@@ -489,4 +469,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v3.2 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.0 activo en puerto ${PORT}`));
