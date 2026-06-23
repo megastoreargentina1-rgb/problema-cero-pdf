@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.2");
+  res.send("Motor PDF Problema Cero v4.3");
 });
 
 function limpiarTexto(texto) {
@@ -44,18 +44,12 @@ function procesarMarkdownAHTML(textoCrudo) {
     contenidoEmpezado = true;
   }
 
-  function volcarBuffers() {}
-
   lineas.forEach(linea => {
     if (ignorarResto) return;
-
     let limpia = linea.trim();
     if (!limpia) return;
 
-    if (prefijosIgnorar.some(p => limpia.startsWith(p))) {
-      saltarLinea = true;
-      return;
-    }
+    if (prefijosIgnorar.some(p => limpia.startsWith(p))) { saltarLinea = true; return; }
 
     const esTitulo = /^(?:[🧭🎯🛑🔧📅📆📌💬📊⚠️🧠⚡🔴🚀💰🔥👉⚠🔎]\s*)?(MAPA EJECUTIVO|PRIORIDAD ABSOLUTA|QUÉ DEJAR DE HACER YA|QUÉ CORREGIR PRIMERO|CIERRE ESTRATÉGICO|RESUMEN RÁPIDO|PROBLEMA PRINCIPAL|QUÉ SIGNIFICA|CAUSA REAL|ACCIÓN CONCRETA|IMPACTO|CIERRE|MÉTRICA QUE DEBERÍA MIRAR)/i.test(limpia);
 
@@ -69,10 +63,7 @@ function procesarMarkdownAHTML(textoCrudo) {
       return;
     }
 
-    if (limpia === "ANÁLISIS COMPLETO:") {
-      contenidoEmpezado = true;
-      return;
-    }
+    if (limpia === "ANÁLISIS COMPLETO:") { contenidoEmpezado = true; return; }
 
     if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL")) {
       if (enLista) { htmlResult += '</ul>'; enLista = false; }
@@ -81,22 +72,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       htmlResult += '<div class="page-break"></div>';
       htmlResult += '<div class="contenedor-cierre"><div class="caja-premium-cierre">';
       htmlResult += '<h2 class="cierre-titulo">ESTE DIAGNÓSTICO ES SOLO EL PRIMER NIVEL</h2>';
-      return;
-    }
-
-    if (limpia.includes("ESTE DIAGNÓSTICO ES SOLO EL PUNTO DE PARTIDA") ||
-        limpia.includes("TU SIGUIENTE NIVEL DE EJECUCIÓN") ||
-        limpia.includes("TU SIGUIENTE NIVEL:")) {
-      if (enLista) { htmlResult += '</ul>'; enLista = false; }
-      if (enCajaNaranja) { htmlResult += '</div>'; enCajaNaranja = false; }
-      if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
-      htmlResult += '<div class="page-break"></div>';
-      htmlResult += '<div class="contenedor-cierre"><div class="black-box-cta">';
-      htmlResult += '<h3>TU SIGUIENTE NIVEL DE EJECUCIÓN</h3>';
-      htmlResult += '<p>Detectar el bloqueo es vital, pero la transformación ocurre en la acción.</p>';
-      htmlResult += '<a href="https://problemacero.com.ar" class="btn-premium">DESBLOQUEAR RUTA DE 30 DÍAS</a>';
-      htmlResult += '</div></div>';
-      ignorarResto = true;
       return;
     }
 
@@ -116,12 +91,12 @@ function procesarMarkdownAHTML(textoCrudo) {
       if (enCajaCierre) { htmlResult += '</div></div>'; enCajaCierre = false; }
 
       const tituloLimpio = matchTitulo[1].trim().toUpperCase();
-
       let kickerText = 'Lectura Estratégica';
       if (["MAPA EJECUTIVO","PRIORIDAD ABSOLUTA","QUÉ DEJAR DE HACER YA","QUÉ CORREGIR PRIMERO"].some(t => tituloLimpio.includes(t))) kickerText = 'Arquitectura de Decisiones';
       else if (["MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
       else if (tituloLimpio.includes("CIERRE")) kickerText = 'Cierre Estratégico';
 
+      // Cada sección del diagnóstico arranca en página nueva — resuelve el corte a la mitad
       htmlResult += '<div class="page-break"></div>';
       htmlResult += `<div class="editorial-header">
         <div class="kicker">${kickerText}</div>
@@ -167,7 +142,9 @@ function procesarMarkdownAHTML(textoCrudo) {
 
 function renderDias(dias) {
   if (!dias || !dias.length) return "";
-  let h = '<div class="timeline"><div class="timeline-rail"></div>';
+  // Arquitectura corregida: nodo en flujo normal (no absolute)
+  // para que no se pierda al cruzar páginas
+  let h = '<div class="timeline">';
   dias.forEach(d => {
     h += `<div class="tl-item">
       <div class="tl-nodo">
@@ -290,6 +267,7 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       </div>
     </div>` : "";
 
+  // Cada bloque del plan tiene su propio padding y page-break
   const bloque7Dias = html7Dias ? `
     <div class="seccion-plan">
       <div class="editorial-header post-cover">
@@ -299,13 +277,16 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       </div>${html7Dias}
     </div>` : "";
 
+  // Header y grilla 30 días en el mismo bloque — evita página vacía
   const bloque30Dias = html30Dias ? `
     <div class="seccion-plan page-break-before">
-      <div class="editorial-header post-cover">
-        <div class="kicker">Plan de Ejecución</div>
-        <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 30 DÍAS</h2>
-        <div class="titulo-linea"></div>
-      </div>${html30Dias}
+      <div class="bloque-30-completo">
+        <div class="editorial-header post-cover">
+          <div class="kicker">Plan de Ejecución</div>
+          <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 30 DÍAS</h2>
+          <div class="titulo-linea"></div>
+        </div>${html30Dias}
+      </div>
     </div>` : "";
 
   const bloqueIdeas = htmlIdeas ? `
@@ -347,221 +328,80 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       --texto: #111111;
       --texto-plan: #0d0d0d;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      color: var(--texto);
-      background: #fff;
-    }
+    body { font-family: 'Inter', sans-serif; color: var(--texto); background: #fff; }
 
     /* ── CARÁTULAS ── */
     .cover {
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
       text-align: center;
-      background-color: var(--negro);
-      color: #fff;
+      background-color: var(--negro); color: #fff;
       padding: 60px;
       page-break-after: always;
     }
-
-    /* La carátula interna NO usa page-break-after:always
-       para evitar la página en blanco — el contenido que
-       sigue arranca en la misma "hoja" nueva forzada por
-       el page-break-before del primer bloque del plan */
     .cover-interna {
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
       text-align: center;
-      background-color: var(--negro);
-      color: #fff;
+      background-color: var(--negro); color: #fff;
       padding: 60px;
       page-break-before: always;
       page-break-after: always;
     }
-
     .logo-portada { width: 180px; margin-bottom: 36px; }
-
-    .cover h1,
-    .cover-interna h1 {
-      font-size: 36px;
-      color: var(--rojo);
-      letter-spacing: 4px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .cover .subtitle,
-    .cover-interna .subtitle {
-      font-size: 16px;
-      font-weight: 300;
-      color: #d1d5db;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-    .cover .private,
-    .cover-interna .private {
-      font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-      letter-spacing: 5px;
-      text-transform: uppercase;
-      margin-bottom: 44px;
-    }
-    .cover .diag-title,
-    .cover-interna .diag-title {
-      font-size: 54px;
-      font-weight: 300;
-      line-height: 1.15;
-      margin-bottom: 36px;
-      color: #fff;
-    }
-    .cover .description,
-    .cover-interna .description {
-      font-size: 19px;
-      color: #9ca3af;
-      max-width: 580px;
-      border-top: 1px solid #334155;
-      border-bottom: 1px solid #334155;
-      padding: 22px 0;
-      line-height: 1.7;
-      font-weight: 300;
-    }
-    .cover-footer { margin-top: 44px; text-align: center; }
-    .cover-footer .label {
-      font-size: 11px;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-    .cover-footer .value { font-size: 19px; color: #fff; font-weight: 400; }
+    .cover h1, .cover-interna h1 { font-size:36px; color:var(--rojo); letter-spacing:4px; font-weight:700; margin-bottom:10px; }
+    .cover .subtitle, .cover-interna .subtitle { font-size:16px; font-weight:300; color:#d1d5db; letter-spacing:1px; margin-bottom:6px; }
+    .cover .private, .cover-interna .private { font-size:12px; font-weight:600; color:#6b7280; letter-spacing:5px; text-transform:uppercase; margin-bottom:44px; }
+    .cover .diag-title, .cover-interna .diag-title { font-size:54px; font-weight:300; line-height:1.15; margin-bottom:36px; color:#fff; }
+    .cover .description, .cover-interna .description { font-size:19px; color:#9ca3af; max-width:580px; border-top:1px solid #334155; border-bottom:1px solid #334155; padding:22px 0; line-height:1.7; font-weight:300; }
+    .cover-footer { margin-top:44px; text-align:center; }
+    .cover-footer .label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:3px; margin-bottom:6px; font-weight:600; }
+    .cover-footer .value { font-size:19px; color:#fff; font-weight:400; }
 
     /* ── LAYOUT ── */
     .page-content { padding: 70px 80px; }
-
-    /* Saltos de página limpios */
-    .page-break        { page-break-before: always; height: 1px; }
+    .page-break { page-break-before: always; height: 1px; }
     .page-break-before { page-break-before: always; }
 
-    /* Secciones del plan — cada una arranca en página nueva
-       con padding propio, sin depender de page-content wrapper */
-    .seccion-plan {
-      padding: 70px 80px;
-    }
-    .seccion-plan.page-break-before {
-      page-break-before: always;
-    }
+    .seccion-plan { padding: 70px 80px; }
+    .seccion-plan.page-break-before { page-break-before: always; }
 
-    /* Kicker con respiro extra cuando sigue a un salto */
-    .post-cover {
-      padding-top: 8px;
-    }
+    /* Header + grilla 30 días juntos — evita página vacía entre título y contenido */
+    .bloque-30-completo { page-break-inside: avoid; break-inside: avoid; }
 
-    /* ── CABECERAS EDITORIALES ── */
+    .post-cover { padding-top: 8px; }
+
+    /* ── CABECERAS ── */
     .editorial-header { margin-bottom: 36px; }
-    .kicker {
-      font-size: 11px;
-      color: var(--rojo);
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .editorial-title {
-      color: #111;
-      font-size: 34px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-    .titulo-linea {
-      width: 52px;
-      height: 5px;
-      background: var(--rojo);
-      margin-bottom: 32px;
-    }
+    .kicker { font-size:11px; color:var(--rojo); text-transform:uppercase; letter-spacing:4px; font-weight:700; margin-bottom:10px; }
+    .editorial-title { color:#111; font-size:34px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+    .titulo-linea { width:52px; height:5px; background:var(--rojo); margin-bottom:32px; }
 
     /* ── TEXTO NARRATIVO ── */
-    .texto-editorial {
-      font-size: 23px;
-      line-height: 1.85;
-      color: #111;
-      font-weight: 400;
-      margin-bottom: 22px;
-      letter-spacing: 0.01em;
-    }
-    .subtitulo-seccion {
-      font-size: 21px;
-      font-weight: 700;
-      color: #111;
-      margin-bottom: 14px;
-      margin-top: 12px;
-    }
-    strong { font-weight: 700; color: #000; }
+    .texto-editorial { font-size:23px; line-height:1.85; color:#111; font-weight:400; margin-bottom:22px; letter-spacing:0.01em; }
+    .subtitulo-seccion { font-size:21px; font-weight:700; color:#111; margin-bottom:14px; margin-top:12px; }
+    strong { font-weight:700; color:#000; }
+    .editorial-list { list-style:none; padding-left:0; margin:12px 0 28px 0; }
+    .list-item { position:relative; padding-left:30px; margin-bottom:18px; font-size:23px; line-height:1.85; color:#111; font-weight:400; letter-spacing:0.01em; }
+    .editorial-list .list-item::before { content:"—"; color:var(--rojo); font-weight:700; position:absolute; left:0; top:0; }
 
-    .editorial-list {
-      list-style: none;
-      padding-left: 0;
-      margin: 12px 0 28px 0;
-    }
-    .list-item {
-      position: relative;
-      padding-left: 30px;
-      margin-bottom: 18px;
-      font-size: 23px;
-      line-height: 1.85;
-      color: #111;
-      font-weight: 400;
-      letter-spacing: 0.01em;
-    }
-    .editorial-list .list-item::before {
-      content: "—";
-      color: var(--rojo);
-      font-weight: 700;
-      position: absolute;
-      left: 0;
-      top: 0;
-    }
-
-    /* ── TIMELINE 7 DÍAS ── */
-    .timeline {
-      position: relative;
-      padding-left: 90px;
-      margin-bottom: 8px;
-    }
-    /* Rail que conecta todos los nodos */
-    .timeline-rail {
-      position: absolute;
-      left: 30px;
-      top: 33px;
-      bottom: 33px;
-      width: 4px;
-      background: linear-gradient(to bottom, #dc2626, #555);
-      border-radius: 2px;
-    }
+    /* ── TIMELINE 7 DÍAS — arquitectura en flujo, sin position absolute ── */
+    .timeline { margin-bottom: 8px; }
     .tl-item {
-      position: relative;
-      margin-bottom: 16px;
       display: flex;
       align-items: flex-start;
-      /* Evita que un item se corte entre páginas */
+      gap: 20px;
+      margin-bottom: 16px;
+      /* Cada ítem se mantiene entero — nunca se parte entre páginas */
       page-break-inside: avoid;
       break-inside: avoid;
     }
+    /* Nodo en flujo normal — ya no es position:absolute, no se pierde al paginar */
     .tl-nodo {
-      position: absolute;
-      left: -90px;
-      top: 0;
+      flex-shrink: 0;
       width: 66px;
       height: 66px;
       background: var(--rojo);
@@ -571,405 +411,90 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 16px rgba(220,38,38,.4);
-      flex-shrink: 0;
     }
-    .tl-nodo-label {
-      font-size: 8px;
-      letter-spacing: 2px;
-      color: rgba(255,255,255,.65);
-      text-transform: uppercase;
-    }
-    .tl-nodo-num {
-      font-size: 26px;
-      font-weight: 900;
-      color: #fff;
-      line-height: 1;
-    }
+    .tl-nodo-label { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,.65); text-transform:uppercase; }
+    .tl-nodo-num { font-size:26px; font-weight:900; color:#fff; line-height:1; }
     .tl-card {
+      flex: 1;
       background: #fafafa;
       border: 1px solid #e8e8e8;
       border-left: 4px solid var(--rojo);
       border-radius: 0 6px 6px 0;
       padding: 18px 24px;
-      flex: 1;
       min-height: 66px;
+      display: flex;
+      align-items: center;
     }
-    .tl-texto {
-      font-size: 22px;
-      font-weight: 500;
-      color: var(--texto-plan);
-      line-height: 1.65;
-      letter-spacing: 0.01em;
-    }
+    .tl-texto { font-size:22px; font-weight:500; color:var(--texto-plan); line-height:1.65; letter-spacing:0.01em; }
 
     /* ── GRILLA 30 DÍAS ── */
-    .semanas-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      /* Evita que la grilla se parta entre páginas */
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    .sem-card {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      overflow: hidden;
-      /* Cada tarjeta se mantiene entera */
-      page-break-inside: avoid;
-      break-inside: avoid;
-      display: flex;
-      flex-direction: column;
-    }
-    .sem-header {
-      padding: 16px 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .sem-num-bg {
-      font-size: 50px;
-      font-weight: 900;
-      color: rgba(255,255,255,.12);
-      line-height: 1;
-      flex-shrink: 0;
-    }
-    .sem-info { display: flex; flex-direction: column; }
-    .sem-label {
-      font-size: 8px;
-      letter-spacing: 3px;
-      color: rgba(255,255,255,.4);
-      text-transform: uppercase;
-    }
-    .sem-obj {
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-      text-transform: uppercase;
-      margin-top: 3px;
-      line-height: 1.3;
-    }
-    .sem-body {
-      padding: 16px 18px;
-      background: #fafafa;
-      flex: 1; /* ← iguala altura entre columnas */
-    }
-    .sem-acc-label {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: var(--rojo);
-      text-transform: uppercase;
-      margin-bottom: 7px;
-    }
-    .sem-acc-texto {
-      font-size: 19px;
-      font-weight: 500;
-      color: var(--texto-plan);
-      line-height: 1.65;
-      letter-spacing: 0.01em;
-    }
+    .semanas-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .sem-card { border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; page-break-inside:avoid; break-inside:avoid; display:flex; flex-direction:column; }
+    .sem-header { padding:16px 18px; display:flex; align-items:center; gap:12px; }
+    .sem-num-bg { font-size:50px; font-weight:900; color:rgba(255,255,255,.12); line-height:1; flex-shrink:0; }
+    .sem-info { display:flex; flex-direction:column; }
+    .sem-label { font-size:8px; letter-spacing:3px; color:rgba(255,255,255,.4); text-transform:uppercase; }
+    .sem-obj { font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; margin-top:3px; line-height:1.3; }
+    .sem-body { padding:16px 18px; background:#fafafa; flex:1; }
+    .sem-acc-label { font-size:8px; font-weight:700; letter-spacing:2px; color:var(--rojo); text-transform:uppercase; margin-bottom:7px; }
+    .sem-acc-texto { font-size:19px; font-weight:500; color:var(--texto-plan); line-height:1.65; letter-spacing:0.01em; }
 
-    /* ── IDEAS DE CONTENIDO ── */
-    .idea-card {
-      display: flex;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      min-height: 96px;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    .idea-lat {
-      width: 70px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .idea-lat-label {
-      font-size: 7px;
-      letter-spacing: 2px;
-      color: rgba(255,255,255,.4);
-      text-transform: uppercase;
-    }
-    .idea-lat-num {
-      font-size: 32px;
-      font-weight: 900;
-      color: #fff;
-      line-height: 1;
-    }
-    .idea-cuerpo {
-      flex: 1;
-      border: 1px solid #e0e0e0;
-      border-left: none;
-      border-radius: 0 8px 8px 0;
-    }
-    .idea-gancho-box {
-      background: #f0f0f0;
-      padding: 12px 18px;
-      border-bottom: 1px solid #e0e0e0;
-    }
-    .idea-gancho-label {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      color: var(--rojo);
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-    .idea-gancho {
-      font-size: 18px;
-      font-weight: 700;
-      color: #111;
-      font-style: italic;
-      line-height: 1.45;
-    }
-    .idea-meta {
-      display: flex;
-      padding: 10px 18px;
-      background: #fafafa;
-      gap: 14px;
-    }
-    .idea-col { flex: 1; }
-    .idea-col-label {
-      font-size: 7px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #999;
-      text-transform: uppercase;
-      margin-bottom: 3px;
-    }
-    .idea-col-val {
-      font-size: 17px;
-      font-weight: 500;
-      color: var(--texto-plan);
-      line-height: 1.5;
-      letter-spacing: 0.01em;
-    }
+    /* ── IDEAS ── */
+    .idea-card { display:flex; border-radius:8px; overflow:hidden; margin-bottom:14px; min-height:96px; page-break-inside:avoid; break-inside:avoid; }
+    .idea-lat { width:70px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .idea-lat-label { font-size:7px; letter-spacing:2px; color:rgba(255,255,255,.4); text-transform:uppercase; }
+    .idea-lat-num { font-size:32px; font-weight:900; color:#fff; line-height:1; }
+    .idea-cuerpo { flex:1; border:1px solid #e0e0e0; border-left:none; border-radius:0 8px 8px 0; }
+    .idea-gancho-box { background:#f0f0f0; padding:12px 18px; border-bottom:1px solid #e0e0e0; }
+    .idea-gancho-label { font-size:8px; font-weight:700; letter-spacing:3px; color:var(--rojo); text-transform:uppercase; margin-bottom:4px; }
+    .idea-gancho { font-size:18px; font-weight:700; color:#111; font-style:italic; line-height:1.45; }
+    .idea-meta { display:flex; padding:10px 18px; background:#fafafa; gap:14px; }
+    .idea-col { flex:1; }
+    .idea-col-label { font-size:7px; font-weight:700; letter-spacing:2px; color:#999; text-transform:uppercase; margin-bottom:3px; }
+    .idea-col-val { font-size:17px; font-weight:500; color:var(--texto-plan); line-height:1.5; letter-spacing:0.01em; }
 
-    /* ── SI / ENTONCES ── */
-    .se-bloque {
-      margin-bottom: 20px;
-      /* Cada escenario se mantiene junto — no se parte entre páginas */
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    .se-num {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      color: #ccc;
-      text-transform: uppercase;
-      margin-bottom: 7px;
-    }
-    .se-flujo { display: flex; align-items: stretch; }
-    .se-si {
-      flex: 1;
-      background: #f4f4f4;
-      border: 2px solid #e0e0e0;
-      border-right: none;
-      border-radius: 8px 0 0 8px;
-      padding: 16px 18px;
-    }
-    .se-si-label {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      color: #aaa;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    .se-si-texto {
-      font-size: 19px;
-      font-weight: 500;
-      color: var(--texto-plan);
-      line-height: 1.6;
-      letter-spacing: 0.01em;
-    }
-    .se-flecha {
-      background: var(--rojo);
-      width: 52px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-    }
-    .se-flecha-label {
-      font-size: 7px;
-      letter-spacing: 1px;
-      color: rgba(255,255,255,.55);
-      text-transform: uppercase;
-    }
-    .se-entonces {
-      flex: 1;
-      background: var(--negro);
-      border: 2px solid var(--negro);
-      border-left: none;
-      border-radius: 0 8px 8px 0;
-      padding: 16px 18px;
-    }
-    .se-entonces-label {
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      color: rgba(255,255,255,.35);
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    .se-entonces-texto {
-      font-size: 19px;
-      font-weight: 500;
-      color: #fff;
-      line-height: 1.6;
-      letter-spacing: 0.01em;
-    }
+    /* ── SI/ENTONCES ── */
+    .se-bloque { margin-bottom:20px; page-break-inside:avoid; break-inside:avoid; }
+    .se-num { font-size:9px; font-weight:700; letter-spacing:3px; color:#ccc; text-transform:uppercase; margin-bottom:7px; }
+    .se-flujo { display:flex; align-items:stretch; }
+    .se-si { flex:1; background:#f4f4f4; border:2px solid #e0e0e0; border-right:none; border-radius:8px 0 0 8px; padding:16px 18px; }
+    .se-si-label { font-size:8px; font-weight:700; letter-spacing:3px; color:#aaa; text-transform:uppercase; margin-bottom:6px; }
+    .se-si-texto { font-size:19px; font-weight:500; color:var(--texto-plan); line-height:1.6; letter-spacing:0.01em; }
+    .se-flecha { background:var(--rojo); width:52px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
+    .se-flecha-label { font-size:7px; letter-spacing:1px; color:rgba(255,255,255,.55); text-transform:uppercase; }
+    .se-entonces { flex:1; background:var(--negro); border:2px solid var(--negro); border-left:none; border-radius:0 8px 8px 0; padding:16px 18px; }
+    .se-entonces-label { font-size:8px; font-weight:700; letter-spacing:3px; color:rgba(255,255,255,.35); text-transform:uppercase; margin-bottom:6px; }
+    .se-entonces-texto { font-size:19px; font-weight:500; color:#fff; line-height:1.6; letter-spacing:0.01em; }
 
-    /* ── MENSAJES DE VENTA ── */
-    .msj-card {
-      position: relative;
-      padding: 30px 36px 26px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    .msj-cla { background: #fafafa; border: 1px solid #e0e0e0; }
-    .msj-osc { background: var(--negro); }
-    .msj-comilla {
-      position: absolute;
-      top: 4px;
-      left: 14px;
-      font-size: 80px;
-      font-weight: 900;
-      color: var(--rojo);
-      opacity: .15;
-      line-height: 1;
-      font-family: Georgia, serif;
-    }
-    .msj-num {
-      position: absolute;
-      top: 14px;
-      right: 18px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #aaa;
-    }
-    .msj-texto {
-      font-size: 22px;
-      font-weight: 500;
-      line-height: 1.75;
-      font-style: italic;
-      position: relative;
-      z-index: 1;
-      padding-left: 6px;
-      letter-spacing: 0.01em;
-    }
-    .msj-cla .msj-texto { color: #111; }
-    .msj-osc .msj-texto { color: #fff; }
+    /* ── MENSAJES ── */
+    .msj-card { position:relative; padding:30px 36px 26px; border-radius:8px; margin-bottom:16px; page-break-inside:avoid; break-inside:avoid; }
+    .msj-cla { background:#fafafa; border:1px solid #e0e0e0; }
+    .msj-osc { background:var(--negro); }
+    .msj-comilla { position:absolute; top:4px; left:14px; font-size:80px; font-weight:900; color:var(--rojo); opacity:.15; line-height:1; font-family:Georgia,serif; }
+    .msj-num { position:absolute; top:14px; right:18px; font-size:10px; font-weight:700; letter-spacing:2px; color:#aaa; }
+    .msj-texto { font-size:22px; font-weight:500; line-height:1.75; font-style:italic; position:relative; z-index:1; padding-left:6px; letter-spacing:0.01em; }
+    .msj-cla .msj-texto { color:#111; }
+    .msj-osc .msj-texto { color:#fff; }
 
     /* ── CIERRE ── */
-    .contenedor-cierre {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 70vh;
-    }
-    .caja-premium-cierre {
-      background-color: var(--negro);
-      color: #fff;
-      border: 1px solid #334155;
-      padding: 54px;
-      width: 100%;
-      text-align: center;
-    }
-    .cierre-titulo {
-      color: #fff;
-      font-size: 24px;
-      text-transform: uppercase;
-      border-bottom: 2px solid var(--rojo);
-      padding-bottom: 18px;
-      margin-bottom: 26px;
-      letter-spacing: 2px;
-      font-weight: 700;
-    }
-    .texto-cierre {
-      color: #e5e7eb;
-      font-size: 23px;
-      line-height: 1.85;
-      margin-bottom: 18px;
-      font-weight: 300;
-    }
-    .cierre-list { list-style: none; padding-left: 0; margin: 10px 0 20px 0; }
-    .cierre-list .list-item::before { content: "—"; color: var(--rojo); position: absolute; left: 0; top: 0; }
-
-    .caja-cta-blanca {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-left: 4px solid var(--rojo);
-      padding: 28px 32px;
-      margin-top: 32px;
-    }
-    .cta-titulo {
-      color: var(--rojo);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-    .cta-texto { color: #111; font-size: 19px; font-weight: 400; line-height: 1.7; }
-
-    .black-box-cta {
-      background-color: var(--negro);
-      color: #fff;
-      padding: 54px;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      width: 100%;
-      text-align: center;
-    }
-    .black-box-cta h3 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-      color: #fff;
-      text-transform: uppercase;
-      border-bottom: 2px solid var(--rojo);
-      padding-bottom: 18px;
-      display: inline-block;
-    }
-    .black-box-cta p {
-      font-size: 19px;
-      font-weight: 300;
-      line-height: 1.7;
-      color: #e5e7eb;
-      margin: 0 auto 36px auto;
-      max-width: 80%;
-    }
-    .btn-premium {
-      display: inline-block;
-      background-color: var(--rojo);
-      color: #fff;
-      text-decoration: none;
-      padding: 16px 40px;
-      font-weight: 700;
-      font-size: 17px;
-      letter-spacing: 1px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
+    .contenedor-cierre { display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:70vh; }
+    .caja-premium-cierre { background-color:var(--negro); color:#fff; border:1px solid #334155; padding:54px; width:100%; text-align:center; }
+    .cierre-titulo { color:#fff; font-size:24px; text-transform:uppercase; border-bottom:2px solid var(--rojo); padding-bottom:18px; margin-bottom:26px; letter-spacing:2px; font-weight:700; }
+    .texto-cierre { color:#e5e7eb; font-size:23px; line-height:1.85; margin-bottom:18px; font-weight:300; }
+    .cierre-list { list-style:none; padding-left:0; margin:10px 0 20px 0; }
+    .cierre-list .list-item::before { content:"—"; color:var(--rojo); position:absolute; left:0; top:0; }
+    .caja-cta-blanca { background:#f9fafb; border:1px solid #e5e7eb; border-left:4px solid var(--rojo); padding:28px 32px; margin-top:32px; }
+    .cta-titulo { color:var(--rojo); font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
+    .cta-texto { color:#111; font-size:19px; font-weight:400; line-height:1.7; }
+    .black-box-cta { background-color:var(--negro); color:#fff; padding:54px; border:1px solid #334155; border-radius:6px; width:100%; text-align:center; }
+    .black-box-cta h3 { font-size:22px; font-weight:700; letter-spacing:2px; margin-bottom:20px; color:#fff; text-transform:uppercase; border-bottom:2px solid var(--rojo); padding-bottom:18px; display:inline-block; }
+    .black-box-cta p { font-size:19px; font-weight:300; line-height:1.7; color:#e5e7eb; margin:0 auto 36px auto; max-width:80%; }
+    .btn-premium { display:inline-block; background-color:var(--rojo); color:#fff; text-decoration:none; padding:16px 40px; font-weight:700; font-size:17px; letter-spacing:1px; border-radius:4px; text-transform:uppercase; }
   </style>
 </head>
 <body>
 
-  <!-- CARÁTULA 1: Diagnóstico estratégico -->
+  <!-- CARÁTULA 1 -->
   <div class="cover">
     <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
     <h1>PROBLEMA CERO</h1>
@@ -983,15 +508,15 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     </div>
   </div>
 
-  <!-- CONTENIDO NARRATIVO: Diagnóstico -->
+  <!-- DIAGNÓSTICO NARRATIVO -->
   <div class="page-content">
     ${contenidoNarrativo}
   </div>
 
-  <!-- CARÁTULA 2: Mapa de Ejecución (page-break-before:always + page-break-after:always) -->
+  <!-- CARÁTULA 2 -->
   ${caratulaEjecucion}
 
-  <!-- SECCIONES DEL PLAN — cada una con su propio padding y page-break -->
+  <!-- SECCIONES DEL PLAN -->
   ${bloque7Dias}
   ${bloque30Dias}
   ${bloqueIdeas}
@@ -1050,4 +575,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.2 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.3 activo en puerto ${PORT}`));
