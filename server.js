@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.3");
+  res.send("Motor PDF Problema Cero v4.4");
 });
 
 function limpiarTexto(texto) {
@@ -482,6 +482,8 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     .cierre-titulo { color:#fff; font-size:24px; text-transform:uppercase; border-bottom:2px solid var(--rojo); padding-bottom:18px; margin-bottom:26px; letter-spacing:2px; font-weight:700; }
     .texto-cierre { color:#e5e7eb; font-size:23px; line-height:1.85; margin-bottom:18px; font-weight:300; }
     .cierre-list { list-style:none; padding-left:0; margin:10px 0 20px 0; }
+    /* Viñetas dentro de caja negra: texto blanco, guión rojo */
+    .cierre-list .list-item { color:#e5e7eb; }
     .cierre-list .list-item::before { content:"—"; color:var(--rojo); position:absolute; left:0; top:0; }
     .caja-cta-blanca { background:#f9fafb; border:1px solid #e5e7eb; border-left:4px solid var(--rojo); padding:28px 32px; margin-top:32px; }
     .cta-titulo { color:var(--rojo); font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
@@ -575,4 +577,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.3 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.4 activo en puerto ${PORT}`));
