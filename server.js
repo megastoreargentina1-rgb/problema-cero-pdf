@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.5");
+  res.send("Motor PDF Problema Cero v4.6");
 });
 
 function limpiarTexto(texto) {
@@ -96,7 +96,6 @@ function procesarMarkdownAHTML(textoCrudo) {
       else if (["MÉTRICA QUE DEBERÍA MIRAR"].some(t => tituloLimpio.includes(t))) kickerText = 'Ejecución Comercial';
       else if (tituloLimpio.includes("CIERRE")) kickerText = 'Cierre Estratégico';
 
-      // Cada sección del diagnóstico arranca en página nueva — resuelve el corte a la mitad
       htmlResult += '<div class="page-break"></div>';
       htmlResult += `<div class="editorial-header">
         <div class="kicker">${kickerText}</div>
@@ -142,8 +141,6 @@ function procesarMarkdownAHTML(textoCrudo) {
 
 function renderDias(dias) {
   if (!dias || !dias.length) return "";
-  // Tabla HTML: estructura más robusta en Puppeteer — las celdas
-  // nunca pierden su contenido ni su layout al cruzar páginas
   let h = '<table class="timeline-table" cellspacing="0" cellpadding="0">';
   dias.forEach(d => {
     h += `<tr style="page-break-inside:avoid;break-inside:avoid;">
@@ -271,7 +268,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       </div>
     </div>` : "";
 
-  // Cada bloque del plan tiene su propio padding y page-break
   const bloque7Dias = html7Dias ? `
     <div class="seccion-plan">
       <div class="editorial-header post-cover">
@@ -281,7 +277,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       </div>${html7Dias}
     </div>` : "";
 
-  // Header y grilla 30 días en el mismo bloque — evita página vacía
   const bloque30Dias = html30Dias ? `
     <div class="seccion-plan page-break-before">
       <div class="bloque-30-completo">
@@ -344,6 +339,8 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       background-color: var(--negro); color: #fff;
       padding: 60px;
       page-break-after: always;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .cover-interna {
       height: 100vh;
@@ -354,6 +351,8 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       padding: 60px;
       page-break-before: always;
       page-break-after: always;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .logo-portada { width: 180px; margin-bottom: 36px; }
     .cover h1, .cover-interna h1 { font-size:36px; color:var(--rojo); letter-spacing:4px; font-weight:700; margin-bottom:10px; }
@@ -369,20 +368,16 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     .page-content { padding: 70px 80px; }
     .page-break { page-break-before: always; height: 1px; }
     .page-break-before { page-break-before: always; }
-
     .seccion-plan { padding: 70px 80px; }
     .seccion-plan.page-break-before { page-break-before: always; }
-
-    /* Header + grilla 30 días juntos — evita página vacía entre título y contenido */
     .bloque-30-completo { page-break-inside: avoid; break-inside: avoid; }
-
     .post-cover { padding-top: 8px; }
 
     /* ── CABECERAS ── */
     .editorial-header { margin-bottom: 36px; }
     .kicker { font-size:11px; color:var(--rojo); text-transform:uppercase; letter-spacing:4px; font-weight:700; margin-bottom:10px; }
     .editorial-title { color:#111; font-size:34px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
-    .titulo-linea { width:52px; height:5px; background:var(--rojo); margin-bottom:32px; }
+    .titulo-linea { width:52px; height:5px; background:var(--rojo); margin-bottom:32px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
     /* ── TEXTO NARRATIVO ── */
     .texto-editorial { font-size:23px; line-height:1.85; color:#111; font-weight:400; margin-bottom:22px; letter-spacing:0.01em; }
@@ -392,37 +387,56 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     .list-item { position:relative; padding-left:30px; margin-bottom:18px; font-size:23px; line-height:1.85; color:#111; font-weight:400; letter-spacing:0.01em; }
     .editorial-list .list-item::before { content:"—"; color:var(--rojo); font-weight:700; position:absolute; left:0; top:0; }
 
-    /* ── TIMELINE 7 DÍAS — tabla HTML, máxima compatibilidad Puppeteer ── */
+    /* ── TIMELINE 7 DÍAS ── */
     .timeline-table { width:100%; border-collapse:separate; border-spacing:0 14px; margin-bottom:8px; }
-    .tl-nodo-cell { width:80px; vertical-align:middle; padding-right:18px; }
+    .tl-nodo-cell { width:88px; vertical-align:middle; padding-right:18px; }
     .tl-nodo {
       width: 66px;
       height: 66px;
-      background: var(--rojo);
+      background-color: #dc2626 !important;
       border-radius: 50%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 16px rgba(220,38,38,.4);
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-    .tl-nodo-label { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,.65); text-transform:uppercase; }
-    .tl-nodo-num { font-size:26px; font-weight:900; color:#fff; line-height:1; }
+    .tl-nodo-label {
+      font-size:8px;
+      letter-spacing:2px;
+      color:#ffffff !important;
+      opacity: 0.65;
+      text-transform:uppercase;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .tl-nodo-num {
+      font-size:26px;
+      font-weight:900;
+      color:#ffffff !important;
+      line-height:1;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     .tl-card-cell { vertical-align:middle; }
     .tl-card {
       background: #fafafa;
       border: 1px solid #e8e8e8;
-      border-left: 4px solid var(--rojo);
+      border-left: 4px solid #dc2626;
       border-radius: 0 6px 6px 0;
       padding: 18px 24px;
       min-height: 66px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .tl-texto { font-size:22px; font-weight:500; color:var(--texto-plan); line-height:1.65; letter-spacing:0.01em; }
 
     /* ── GRILLA 30 DÍAS ── */
     .semanas-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .sem-card { border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; page-break-inside:avoid; break-inside:avoid; display:flex; flex-direction:column; }
-    .sem-header { padding:16px 18px; display:flex; align-items:center; gap:12px; }
+    .sem-header { padding:16px 18px; display:flex; align-items:center; gap:12px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .sem-num-bg { font-size:50px; font-weight:900; color:rgba(255,255,255,.12); line-height:1; flex-shrink:0; }
     .sem-info { display:flex; flex-direction:column; }
     .sem-label { font-size:8px; letter-spacing:3px; color:rgba(255,255,255,.4); text-transform:uppercase; }
@@ -433,7 +447,7 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
 
     /* ── IDEAS ── */
     .idea-card { display:flex; border-radius:8px; overflow:hidden; margin-bottom:14px; min-height:96px; page-break-inside:avoid; break-inside:avoid; }
-    .idea-lat { width:70px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .idea-lat { width:70px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .idea-lat-label { font-size:7px; letter-spacing:2px; color:rgba(255,255,255,.4); text-transform:uppercase; }
     .idea-lat-num { font-size:32px; font-weight:900; color:#fff; line-height:1; }
     .idea-cuerpo { flex:1; border:1px solid #e0e0e0; border-left:none; border-radius:0 8px 8px 0; }
@@ -452,16 +466,16 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     .se-si { flex:1; background:#f4f4f4; border:2px solid #e0e0e0; border-right:none; border-radius:8px 0 0 8px; padding:16px 18px; }
     .se-si-label { font-size:8px; font-weight:700; letter-spacing:3px; color:#aaa; text-transform:uppercase; margin-bottom:6px; }
     .se-si-texto { font-size:19px; font-weight:500; color:var(--texto-plan); line-height:1.6; letter-spacing:0.01em; }
-    .se-flecha { background:var(--rojo); width:52px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
+    .se-flecha { background:var(--rojo); width:52px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .se-flecha-label { font-size:7px; letter-spacing:1px; color:rgba(255,255,255,.55); text-transform:uppercase; }
-    .se-entonces { flex:1; background:var(--negro); border:2px solid var(--negro); border-left:none; border-radius:0 8px 8px 0; padding:16px 18px; }
+    .se-entonces { flex:1; background:var(--negro); border:2px solid var(--negro); border-left:none; border-radius:0 8px 8px 0; padding:16px 18px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .se-entonces-label { font-size:8px; font-weight:700; letter-spacing:3px; color:rgba(255,255,255,.35); text-transform:uppercase; margin-bottom:6px; }
     .se-entonces-texto { font-size:19px; font-weight:500; color:#fff; line-height:1.6; letter-spacing:0.01em; }
 
     /* ── MENSAJES ── */
     .msj-card { position:relative; padding:30px 36px 26px; border-radius:8px; margin-bottom:16px; page-break-inside:avoid; break-inside:avoid; }
     .msj-cla { background:#fafafa; border:1px solid #e0e0e0; }
-    .msj-osc { background:var(--negro); }
+    .msj-osc { background:var(--negro); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .msj-comilla { position:absolute; top:4px; left:14px; font-size:80px; font-weight:900; color:var(--rojo); opacity:.15; line-height:1; font-family:Georgia,serif; }
     .msj-num { position:absolute; top:14px; right:18px; font-size:10px; font-weight:700; letter-spacing:2px; color:#aaa; }
     .msj-texto { font-size:22px; font-weight:500; line-height:1.75; font-style:italic; position:relative; z-index:1; padding-left:6px; letter-spacing:0.01em; }
@@ -470,25 +484,19 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
 
     /* ── CIERRE ── */
     .contenedor-cierre { display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:70vh; }
-    .caja-premium-cierre { background-color:var(--negro); color:#fff; border:1px solid #334155; padding:54px; width:100%; text-align:center; }
+    .caja-premium-cierre { background-color:var(--negro); color:#fff; border:1px solid #334155; padding:54px; width:100%; text-align:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .cierre-titulo { color:#fff; font-size:24px; text-transform:uppercase; border-bottom:2px solid var(--rojo); padding-bottom:18px; margin-bottom:26px; letter-spacing:2px; font-weight:700; }
     .texto-cierre { color:#e5e7eb; font-size:23px; line-height:1.85; margin-bottom:18px; font-weight:300; }
     .cierre-list { list-style:none; padding-left:0; margin:10px 0 20px 0; }
-    /* Viñetas dentro de caja negra: texto blanco, guión rojo */
     .cierre-list .list-item { color:#e5e7eb; }
     .cierre-list .list-item::before { content:"—"; color:var(--rojo); position:absolute; left:0; top:0; }
     .caja-cta-blanca { background:#f9fafb; border:1px solid #e5e7eb; border-left:4px solid var(--rojo); padding:28px 32px; margin-top:32px; }
     .cta-titulo { color:var(--rojo); font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
     .cta-texto { color:#111; font-size:19px; font-weight:400; line-height:1.7; }
-    .black-box-cta { background-color:var(--negro); color:#fff; padding:54px; border:1px solid #334155; border-radius:6px; width:100%; text-align:center; }
-    .black-box-cta h3 { font-size:22px; font-weight:700; letter-spacing:2px; margin-bottom:20px; color:#fff; text-transform:uppercase; border-bottom:2px solid var(--rojo); padding-bottom:18px; display:inline-block; }
-    .black-box-cta p { font-size:19px; font-weight:300; line-height:1.7; color:#e5e7eb; margin:0 auto 36px auto; max-width:80%; }
-    .btn-premium { display:inline-block; background-color:var(--rojo); color:#fff; text-decoration:none; padding:16px 40px; font-weight:700; font-size:17px; letter-spacing:1px; border-radius:4px; text-transform:uppercase; }
   </style>
 </head>
 <body>
 
-  <!-- CARÁTULA 1: solo si hay contenido narrativo del diagnóstico -->
   ${contenidoNarrativo ? `<div class="cover">
     <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
     <h1>PROBLEMA CERO</h1>
@@ -503,10 +511,7 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
   </div>
   <div class="page-content">${contenidoNarrativo}</div>` : ""}
 
-  <!-- CARÁTULA 2 -->
   ${caratulaEjecucion}
-
-  <!-- SECCIONES DEL PLAN -->
   ${bloque7Dias}
   ${bloque30Dias}
   ${bloqueIdeas}
@@ -565,4 +570,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.5 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.6 activo en puerto ${PORT}`));
