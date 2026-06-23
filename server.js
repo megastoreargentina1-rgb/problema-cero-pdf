@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.4");
+  res.send("Motor PDF Problema Cero v4.5");
 });
 
 function limpiarTexto(texto) {
@@ -142,21 +142,25 @@ function procesarMarkdownAHTML(textoCrudo) {
 
 function renderDias(dias) {
   if (!dias || !dias.length) return "";
-  // Arquitectura corregida: nodo en flujo normal (no absolute)
-  // para que no se pierda al cruzar páginas
-  let h = '<div class="timeline">';
+  // Tabla HTML: estructura más robusta en Puppeteer — las celdas
+  // nunca pierden su contenido ni su layout al cruzar páginas
+  let h = '<table class="timeline-table" cellspacing="0" cellpadding="0">';
   dias.forEach(d => {
-    h += `<div class="tl-item">
-      <div class="tl-nodo">
-        <span class="tl-nodo-label">DÍA</span>
-        <span class="tl-nodo-num">${limpiarTexto(String(d.dia))}</span>
-      </div>
-      <div class="tl-card">
-        <div class="tl-texto">${limpiarTexto(d.accion || "")}</div>
-      </div>
-    </div>`;
+    h += `<tr style="page-break-inside:avoid;break-inside:avoid;">
+      <td class="tl-nodo-cell">
+        <div class="tl-nodo">
+          <span class="tl-nodo-label">DÍA</span>
+          <span class="tl-nodo-num">${limpiarTexto(String(d.dia))}</span>
+        </div>
+      </td>
+      <td class="tl-card-cell">
+        <div class="tl-card">
+          <div class="tl-texto">${limpiarTexto(d.accion || "")}</div>
+        </div>
+      </td>
+    </tr>`;
   });
-  return h + '</div>';
+  return h + '</table>';
 }
 
 function renderSemanas(sems) {
@@ -388,20 +392,10 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     .list-item { position:relative; padding-left:30px; margin-bottom:18px; font-size:23px; line-height:1.85; color:#111; font-weight:400; letter-spacing:0.01em; }
     .editorial-list .list-item::before { content:"—"; color:var(--rojo); font-weight:700; position:absolute; left:0; top:0; }
 
-    /* ── TIMELINE 7 DÍAS — arquitectura en flujo, sin position absolute ── */
-    .timeline { margin-bottom: 8px; }
-    .tl-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 20px;
-      margin-bottom: 16px;
-      /* Cada ítem se mantiene entero — nunca se parte entre páginas */
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    /* Nodo en flujo normal — ya no es position:absolute, no se pierde al paginar */
+    /* ── TIMELINE 7 DÍAS — tabla HTML, máxima compatibilidad Puppeteer ── */
+    .timeline-table { width:100%; border-collapse:separate; border-spacing:0 14px; margin-bottom:8px; }
+    .tl-nodo-cell { width:80px; vertical-align:middle; padding-right:18px; }
     .tl-nodo {
-      flex-shrink: 0;
       width: 66px;
       height: 66px;
       background: var(--rojo);
@@ -414,16 +408,14 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     }
     .tl-nodo-label { font-size:8px; letter-spacing:2px; color:rgba(255,255,255,.65); text-transform:uppercase; }
     .tl-nodo-num { font-size:26px; font-weight:900; color:#fff; line-height:1; }
+    .tl-card-cell { vertical-align:middle; }
     .tl-card {
-      flex: 1;
       background: #fafafa;
       border: 1px solid #e8e8e8;
       border-left: 4px solid var(--rojo);
       border-radius: 0 6px 6px 0;
       padding: 18px 24px;
       min-height: 66px;
-      display: flex;
-      align-items: center;
     }
     .tl-texto { font-size:22px; font-weight:500; color:var(--texto-plan); line-height:1.65; letter-spacing:0.01em; }
 
@@ -496,8 +488,8 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
 </head>
 <body>
 
-  <!-- CARÁTULA 1 -->
-  <div class="cover">
+  <!-- CARÁTULA 1: solo si hay contenido narrativo del diagnóstico -->
+  ${contenidoNarrativo ? `<div class="cover">
     <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
     <h1>PROBLEMA CERO</h1>
     <div class="subtitle">INTERCONSULTA ESTRATÉGICA EMPRESARIAL</div>
@@ -509,11 +501,7 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       <div class="value">Lic. Hernán Mariano Waisman</div>
     </div>
   </div>
-
-  <!-- DIAGNÓSTICO NARRATIVO -->
-  <div class="page-content">
-    ${contenidoNarrativo}
-  </div>
+  <div class="page-content">${contenidoNarrativo}</div>` : ""}
 
   <!-- CARÁTULA 2 -->
   ${caratulaEjecucion}
@@ -577,4 +565,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.4 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.5 activo en puerto ${PORT}`));
