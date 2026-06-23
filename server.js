@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.1");
+  res.send("Motor PDF Problema Cero v4.2");
 });
 
 function limpiarTexto(texto) {
@@ -162,7 +162,7 @@ function procesarMarkdownAHTML(textoCrudo) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// RENDERS VISUALES — alimentados desde arrays JSON
+// RENDERS VISUALES
 // ─────────────────────────────────────────────────────────────
 
 function renderDias(dias) {
@@ -274,9 +274,9 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
   const htmlSiEnt    = renderSiEntonces(escenarios);
   const htmlMensajes = renderMensajes(mensajes);
 
-  // ── Segunda carátula: Mapa de Ejecución ──
-  const caratulaEjecucion = (html7Dias || html30Dias || htmlIdeas || htmlMensajes || htmlSiEnt) ? `
-    <div class="page-break"></div>
+  const hayPlan = html7Dias || html30Dias || htmlIdeas || htmlMensajes || htmlSiEnt;
+
+  const caratulaEjecucion = hayPlan ? `
     <div class="cover-interna">
       <img src="https://www.problemacero.com.ar/logo.png" alt="Logo Problema Cero" class="logo-portada" onerror="this.style.display='none'">
       <h1>PROBLEMA CERO</h1>
@@ -291,44 +291,49 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     </div>` : "";
 
   const bloque7Dias = html7Dias ? `
-    <div class="page-break"></div>
-    <div class="editorial-header">
-      <div class="kicker">Plan de Ejecución</div>
-      <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 7 DÍAS</h2>
-      <div class="titulo-linea"></div>
-    </div>${html7Dias}` : "";
+    <div class="seccion-plan">
+      <div class="editorial-header post-cover">
+        <div class="kicker">Plan de Ejecución</div>
+        <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 7 DÍAS</h2>
+        <div class="titulo-linea"></div>
+      </div>${html7Dias}
+    </div>` : "";
 
   const bloque30Dias = html30Dias ? `
-    <div class="page-break"></div>
-    <div class="editorial-header">
-      <div class="kicker">Plan de Ejecución</div>
-      <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 30 DÍAS</h2>
-      <div class="titulo-linea"></div>
-    </div>${html30Dias}` : "";
+    <div class="seccion-plan page-break-before">
+      <div class="editorial-header post-cover">
+        <div class="kicker">Plan de Ejecución</div>
+        <h2 class="editorial-title">PLAN DE ACCIÓN — PRÓXIMOS 30 DÍAS</h2>
+        <div class="titulo-linea"></div>
+      </div>${html30Dias}
+    </div>` : "";
 
   const bloqueIdeas = htmlIdeas ? `
-    <div class="page-break"></div>
-    <div class="editorial-header">
-      <div class="kicker">Ejecución Comercial</div>
-      <h2 class="editorial-title">CONTENIDO QUE DEBERÍA CREAR</h2>
-      <div class="titulo-linea"></div>
-    </div>${htmlIdeas}` : "";
+    <div class="seccion-plan page-break-before">
+      <div class="editorial-header post-cover">
+        <div class="kicker">Ejecución Comercial</div>
+        <h2 class="editorial-title">CONTENIDO QUE DEBERÍA CREAR</h2>
+        <div class="titulo-linea"></div>
+      </div>${htmlIdeas}
+    </div>` : "";
 
   const bloqueMensajes = htmlMensajes ? `
-    <div class="page-break"></div>
-    <div class="editorial-header">
-      <div class="kicker">Ejecución Comercial</div>
-      <h2 class="editorial-title">MENSAJES DE VENTA LISTOS PARA USAR</h2>
-      <div class="titulo-linea"></div>
-    </div>${htmlMensajes}` : "";
+    <div class="seccion-plan page-break-before">
+      <div class="editorial-header post-cover">
+        <div class="kicker">Ejecución Comercial</div>
+        <h2 class="editorial-title">MENSAJES DE VENTA LISTOS PARA USAR</h2>
+        <div class="titulo-linea"></div>
+      </div>${htmlMensajes}
+    </div>` : "";
 
   const bloqueSiEnt = htmlSiEnt ? `
-    <div class="page-break"></div>
-    <div class="editorial-header">
-      <div class="kicker">Arquitectura de Decisiones</div>
-      <h2 class="editorial-title">SI / ENTONCES</h2>
-      <div class="titulo-linea"></div>
-    </div>${htmlSiEnt}` : "";
+    <div class="seccion-plan page-break-before">
+      <div class="editorial-header post-cover">
+        <div class="kicker">Arquitectura de Decisiones</div>
+        <h2 class="editorial-title">SI / ENTONCES</h2>
+        <div class="titulo-linea"></div>
+      </div>${htmlSiEnt}
+    </div>` : "";
 
   return `<!DOCTYPE html>
 <html>
@@ -352,7 +357,23 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     }
 
     /* ── CARÁTULAS ── */
-    .cover,
+    .cover {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background-color: var(--negro);
+      color: #fff;
+      padding: 60px;
+      page-break-after: always;
+    }
+
+    /* La carátula interna NO usa page-break-after:always
+       para evitar la página en blanco — el contenido que
+       sigue arranca en la misma "hoja" nueva forzada por
+       el page-break-before del primer bloque del plan */
     .cover-interna {
       height: 100vh;
       display: flex;
@@ -363,6 +384,7 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       background-color: var(--negro);
       color: #fff;
       padding: 60px;
+      page-break-before: always;
       page-break-after: always;
     }
 
@@ -376,7 +398,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       font-weight: 700;
       margin-bottom: 10px;
     }
-
     .cover .subtitle,
     .cover-interna .subtitle {
       font-size: 16px;
@@ -385,7 +406,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       letter-spacing: 1px;
       margin-bottom: 6px;
     }
-
     .cover .private,
     .cover-interna .private {
       font-size: 12px;
@@ -395,7 +415,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       text-transform: uppercase;
       margin-bottom: 44px;
     }
-
     .cover .diag-title,
     .cover-interna .diag-title {
       font-size: 54px;
@@ -404,7 +423,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       margin-bottom: 36px;
       color: #fff;
     }
-
     .cover .description,
     .cover-interna .description {
       font-size: 19px;
@@ -416,7 +434,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       line-height: 1.7;
       font-weight: 300;
     }
-
     .cover-footer { margin-top: 44px; text-align: center; }
     .cover-footer .label {
       font-size: 11px;
@@ -428,9 +445,26 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     }
     .cover-footer .value { font-size: 19px; color: #fff; font-weight: 400; }
 
-    /* ── LAYOUT GENERAL ── */
+    /* ── LAYOUT ── */
     .page-content { padding: 70px 80px; }
-    .page-break { page-break-before: always; height: 1px; }
+
+    /* Saltos de página limpios */
+    .page-break        { page-break-before: always; height: 1px; }
+    .page-break-before { page-break-before: always; }
+
+    /* Secciones del plan — cada una arranca en página nueva
+       con padding propio, sin depender de page-content wrapper */
+    .seccion-plan {
+      padding: 70px 80px;
+    }
+    .seccion-plan.page-break-before {
+      page-break-before: always;
+    }
+
+    /* Kicker con respiro extra cuando sigue a un salto */
+    .post-cover {
+      padding-top: 8px;
+    }
 
     /* ── CABECERAS EDITORIALES ── */
     .editorial-header { margin-bottom: 36px; }
@@ -457,7 +491,7 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       margin-bottom: 32px;
     }
 
-    /* ── TEXTO NARRATIVO — DIAGNÓSTICO ── */
+    /* ── TEXTO NARRATIVO ── */
     .texto-editorial {
       font-size: 23px;
       line-height: 1.85;
@@ -505,21 +539,24 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       padding-left: 90px;
       margin-bottom: 8px;
     }
+    /* Rail que conecta todos los nodos */
     .timeline-rail {
       position: absolute;
       left: 30px;
-      top: 32px;
-      bottom: 32px;
+      top: 33px;
+      bottom: 33px;
       width: 4px;
-      background: linear-gradient(to bottom, #dc2626, #333);
+      background: linear-gradient(to bottom, #dc2626, #555);
       border-radius: 2px;
     }
     .tl-item {
       position: relative;
-      margin-bottom: 18px;
-      min-height: 72px;
+      margin-bottom: 16px;
       display: flex;
       align-items: flex-start;
+      /* Evita que un item se corte entre páginas */
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .tl-nodo {
       position: absolute;
@@ -553,13 +590,10 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       border: 1px solid #e8e8e8;
       border-left: 4px solid var(--rojo);
       border-radius: 0 6px 6px 0;
-      padding: 16px 22px;
+      padding: 18px 24px;
       flex: 1;
       min-height: 66px;
-      display: flex;
-      align-items: center;
     }
-    /* ↑ Tipografía del plan igualada al diagnóstico */
     .tl-texto {
       font-size: 22px;
       font-weight: 500;
@@ -573,11 +607,19 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
+      /* Evita que la grilla se parta entre páginas */
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .sem-card {
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       overflow: hidden;
+      /* Cada tarjeta se mantiene entera */
+      page-break-inside: avoid;
+      break-inside: avoid;
+      display: flex;
+      flex-direction: column;
     }
     .sem-header {
       padding: 16px 18px;
@@ -607,7 +649,11 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       margin-top: 3px;
       line-height: 1.3;
     }
-    .sem-body { padding: 16px 18px; background: #fafafa; }
+    .sem-body {
+      padding: 16px 18px;
+      background: #fafafa;
+      flex: 1; /* ← iguala altura entre columnas */
+    }
     .sem-acc-label {
       font-size: 8px;
       font-weight: 700;
@@ -616,7 +662,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       text-transform: uppercase;
       margin-bottom: 7px;
     }
-    /* ↑ Tipografía del plan igualada al diagnóstico */
     .sem-acc-texto {
       font-size: 19px;
       font-weight: 500;
@@ -632,6 +677,8 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       overflow: hidden;
       margin-bottom: 14px;
       min-height: 96px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .idea-lat {
       width: 70px;
@@ -694,7 +741,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       text-transform: uppercase;
       margin-bottom: 3px;
     }
-    /* ↑ Tipografía del plan igualada al diagnóstico */
     .idea-col-val {
       font-size: 17px;
       font-weight: 500;
@@ -704,7 +750,12 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     }
 
     /* ── SI / ENTONCES ── */
-    .se-bloque { margin-bottom: 18px; }
+    .se-bloque {
+      margin-bottom: 20px;
+      /* Cada escenario se mantiene junto — no se parte entre páginas */
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
     .se-num {
       font-size: 9px;
       font-weight: 700;
@@ -730,7 +781,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       text-transform: uppercase;
       margin-bottom: 6px;
     }
-    /* ↑ Tipografía del plan igualada al diagnóstico */
     .se-si-texto {
       font-size: 19px;
       font-weight: 500;
@@ -770,7 +820,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       text-transform: uppercase;
       margin-bottom: 6px;
     }
-    /* ↑ Tipografía del plan igualada al diagnóstico */
     .se-entonces-texto {
       font-size: 19px;
       font-weight: 500;
@@ -785,6 +834,8 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       padding: 30px 36px 26px;
       border-radius: 8px;
       margin-bottom: 16px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .msj-cla { background: #fafafa; border: 1px solid #e0e0e0; }
     .msj-osc { background: var(--negro); }
@@ -808,7 +859,6 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
       letter-spacing: 2px;
       color: #aaa;
     }
-    /* ↑ Tipografía del plan igualada al diagnóstico */
     .msj-texto {
       font-size: 22px;
       font-weight: 500;
@@ -938,17 +988,15 @@ function generarPlantillaPDF(textoDiagnostico, plan7Dias, plan30Dias, contenidos
     ${contenidoNarrativo}
   </div>
 
-  <!-- CARÁTULA 2: Mapa de Ejecución -->
+  <!-- CARÁTULA 2: Mapa de Ejecución (page-break-before:always + page-break-after:always) -->
   ${caratulaEjecucion}
 
-  <!-- CONTENIDO VISUAL: Plan -->
-  <div class="page-content">
-    ${bloque7Dias}
-    ${bloque30Dias}
-    ${bloqueIdeas}
-    ${bloqueMensajes}
-    ${bloqueSiEnt}
-  </div>
+  <!-- SECCIONES DEL PLAN — cada una con su propio padding y page-break -->
+  ${bloque7Dias}
+  ${bloque30Dias}
+  ${bloqueIdeas}
+  ${bloqueMensajes}
+  ${bloqueSiEnt}
 
 </body>
 </html>`;
@@ -1002,4 +1050,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.1 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.2 activo en puerto ${PORT}`));
