@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (req, res) => {
-  res.send("Motor PDF Problema Cero v4.6");
+  res.send("Motor PDF Problema Cero v4.7");
 });
 
 function limpiarTexto(texto) {
@@ -143,13 +143,14 @@ function renderDias(dias) {
   if (!dias || !dias.length) return "";
   let h = '<table class="timeline-table" cellspacing="0" cellpadding="0">';
   dias.forEach(d => {
+    const num = limpiarTexto(String(d.dia));
+    const circulo = `<svg width="66" height="66" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="33" cy="33" r="33" fill="#dc2626"/>
+      <text x="33" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" font-weight="400" fill="rgba(255,255,255,0.65)" letter-spacing="2">DÍA</text>
+      <text x="33" y="47" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="#ffffff">${num}</text>
+    </svg>`;
     h += `<tr style="page-break-inside:avoid;break-inside:avoid;">
-      <td class="tl-nodo-cell">
-        <div class="tl-nodo">
-          <span class="tl-nodo-label">DÍA</span>
-          <span class="tl-nodo-num">${limpiarTexto(String(d.dia))}</span>
-        </div>
-      </td>
+      <td class="tl-nodo-cell">${circulo}</td>
       <td class="tl-card-cell">
         <div class="tl-card">
           <div class="tl-texto">${limpiarTexto(d.accion || "")}</div>
@@ -570,4 +571,4 @@ app.post("/*", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.6 activo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Motor PDF Problema Cero v4.7 activo en puerto ${PORT}`));
